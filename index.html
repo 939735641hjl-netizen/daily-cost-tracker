@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<script src="https://cdn.jsdelivr.net/npm/leancloud-storage/dist/av-min.js"></script>
 <style>
 :root{
   --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--indigo:#4f46e5;
@@ -353,22 +352,14 @@ body.locked{overflow:hidden}
 'use strict';
 
 // ╔══════════════════════════════════╗
-// ║      LEANCLOUD CONFIG           ║
-// ║  填入你的应用配置后重新提交     ║
+// ║      CLOUDFLARE WORKER 地址     ║
+// ║  填入你的 Worker URL 后重新提交 ║
 // ╚══════════════════════════════════╝
-const LEAN_CONFIG = {
-  appId:     "YOUR_APP_ID",
-  appKey:    "YOUR_APP_KEY",
-  serverURL: "YOUR_SERVER_URL"   // 例：https://xxxxxxxx.api.lncld.net
-};
+const API_URL = "YOUR_WORKER_URL"; // 例：https://daily-cost.yourname.workers.dev
 // ════════════════════════════════════
 
-const IS_SET = !LEAN_CONFIG.appId.startsWith('YOUR_');
+const IS_SET = !API_URL.startsWith('YOUR_');
 let unsubFeed = null;
-
-if (IS_SET) {
-  AV.init(LEAN_CONFIG);
-}
 
 /* ── 常量 ── */
 const CATS=[
@@ -477,7 +468,8 @@ function renderFeed(posts){
     e.stopPropagation();
     if(!confirm('删除这条分享吗？'))return;
     try{
-      await AV.Object.createWithoutData('Shared',btn.dataset.fid).destroy();
+      const res=await fetch(`${API_URL}?id=${encodeURIComponent(btn.dataset.fid)}&ownerId=${encodeURIComponent(myId())}`,{method:'DELETE'});
+      if(!res.ok)throw new Error();
       toast('已删除');loadFeed();
     }catch(err){toast('删除失败');}
   }));
@@ -487,29 +479,36 @@ function renderFeedSetup(){
   document.getElementById('feedList').innerHTML=`
   <div class="setup-hint">
     <span class="ico">⚙️</span>
-    <h3>需要配置 LeanCloud 才能使用广场</h3>
-    <p>广场功能需要云端存储，请按以下步骤完成配置（约 5 分钟）。「我的」功能无需配置，可正常使用。</p>
+    <h3>需要配置 Cloudflare Worker 才能使用广场</h3>
+    <p>广场功能需要云端存储。请按以下步骤配置（约 10 分钟，仅需邮箱注册）。「我的」功能无需配置可正常使用。</p>
     <ol class="setup-steps">
-      <li>打开 <a href="https://console.leancloud.cn" target="_blank"><b>console.leancloud.cn</b></a> → 注册/登录 → 创建应用</li>
-      <li>进入应用 → 左侧 <b>设置 → 应用凭证</b>，复制 <b>AppID、AppKey、服务器地址</b></li>
-      <li>在 GitHub 编辑 <b>index.html</b>，找到 <code>LEAN_CONFIG</code>，将三个 <code>YOUR_...</code> 替换为真实值后提交</li>
-      <li>回到 LeanCloud → <b>数据存储 → 结构化数据</b>，创建 Class，名称填 <b>Shared</b>，权限选 <b>无限制</b></li>
+      <li>打开 <b>cloudflare.com</b> → 用邮箱注册（无需手机/实名）</li>
+      <li><b>Workers & Pages</b> → 创建应用 → 创建 Worker → 粘贴下方代码 → 部署</li>
+      <li><b>KV</b>（左侧菜单）→ 创建命名空间，名字随意 → 回到 Worker → 设置 → 变量 → KV 命名空间绑定，变量名填 <b>POSTS</b></li>
+      <li>复制 Worker 网址，在 GitHub 编辑 <b>index.html</b>，把 <code>YOUR_WORKER_URL</code> 替换后提交</li>
     </ol>
-    <div class="setup-code">const LEAN_CONFIG = {
-  appId:     "你的 AppID",
-  appKey:    "你的 AppKey",
-  serverURL: "https://xxxxxxxx.api.lncld.net"
-};</div>
+    <div class="setup-code">// ── 粘贴到 Cloudflare Worker 编辑器 ──
+const C={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,DELETE,OPTIONS','Access-Control-Allow-Headers':'Content-Type'};
+export default{async fetch(r,e){
+  if(r.method==='OPTIONS')return new Response(null,{status:204,headers:C});
+  const j=(d,s=200)=>new Response(JSON.stringify(d),{status:s,headers:{...C,'Content-Type':'application/json'}});
+  try{
+    const raw=await e.POSTS.get('all');let posts=raw?JSON.parse(raw):[];
+    if(r.method==='GET')return j(posts.slice(0,100));
+    if(r.method==='POST'){const d=await r.json();const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);posts.unshift({id,ts:Date.now(),...d});if(posts.length>500)posts=posts.slice(0,500);await e.POSTS.put('all',JSON.stringify(posts));return j({id});}
+    if(r.method==='DELETE'){const u=new URL(r.url),id=u.searchParams.get('id'),oid=u.searchParams.get('ownerId');const p=posts.find(x=>x.id===id);if(!p)return j({error:'not found'},404);if(p.ownerId!==oid)return j({error:'forbidden'},403);await e.POSTS.put('all',JSON.stringify(posts.filter(x=>x.id!==id)));return j({ok:true});}
+    return j({error:'not allowed'},405);
+  }catch(err){return j({error:err.message},500);}
+}};</div>
   </div>`;
   document.getElementById('feedLbl').textContent='广场（未配置）';
 }
 
-/* ── LeanCloud 操作 ── */
+/* ── API 操作（原生 fetch） ── */
 async function fetchPosts(){
-  const q=new AV.Query('Shared');
-  q.descending('createdAt');q.limit(100);
-  const res=await q.find();
-  return res.map(o=>({id:o.id,nickname:o.get('nickname'),name:o.get('name'),cat:o.get('cat'),price:o.get('price'),d:o.get('d'),yr:o.get('yr')||null,note:o.get('note')||'',ownerId:o.get('ownerId'),ts:o.createdAt}));
+  const res=await fetch(API_URL);
+  if(!res.ok)throw new Error('fetch failed');
+  return res.json();
 }
 async function loadFeed(){
   try{const posts=await fetchPosts();renderFeed(posts);}catch(e){console.error(e);}
@@ -677,7 +676,7 @@ function openSharePrefilled(item){
 
 document.getElementById('shareForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(!IS_SET){toast('请先配置 LeanCloud');return;}
+  if(!IS_SET){toast('请先配置 Worker URL');return;}
   const nick=document.getElementById('sNickname').value.trim();
   const name=document.getElementById('sName').value.trim();
   const price=parseFloat(document.getElementById('sPrice').value);
@@ -694,13 +693,12 @@ document.getElementById('shareForm').addEventListener('submit',async e=>{
   const btn=document.getElementById('btnShareSubmit');
   btn.disabled=true;btn.textContent='发布中…';
   try{
-    const Shared=AV.Object.extend('Shared');
-    const obj=new Shared();
-    const acl=new AV.ACL();acl.setPublicReadAccess(true);acl.setPublicWriteAccess(true);obj.setACL(acl);
-    const data={nickname:nick,name,cat:sSelCat,price,d:date,ownerId:myId(),note};
-    if(yr)data.yr=yr;
-    Object.entries(data).forEach(([k,v])=>obj.set(k,v));
-    await obj.save();
+    const res=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({nickname:nick,name,cat:sSelCat,price,d:date,yr,note,ownerId:myId()})
+    });
+    if(!res.ok)throw new Error('服务器错误 '+res.status);
     closeAll();toast('已发布到广场！');
     switchTab('feed');loadFeed();
   }catch(err){toast('发布失败：'+(err.message||'请检查配置'));}
