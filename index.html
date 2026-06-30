@@ -9,16 +9,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 :root{
-  --green:#10b981;--yellow:#f59e0b;--red:#ef4444;
-  --bg:#f3f4f6;--surface:#ffffff;--border:#e5e7eb;
+  --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--indigo:#4f46e5;
+  --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
   --t1:#111827;--t2:#6b7280;--t3:#9ca3af;
   --r:14px;--shadow:0 1px 4px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.05);
   --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
-  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
+  --nav-h:56px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
@@ -26,66 +25,31 @@ body{font-family:'Noto Sans SC',-apple-system,sans-serif;background:var(--bg);co
 body.locked{overflow:hidden}
 .num{font-family:'Archivo',sans-serif;font-variant-numeric:tabular-nums}
 
-/* ── LOADING ── */
-#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:999}
-.spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:#4f46e5;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading p{font-size:.8rem;color:var(--t3)}
-
-/* ── SETUP SCREEN ── */
-#setupWrap{display:none;padding:calc(var(--safe-t)+32px) 20px calc(var(--safe-b)+24px);min-height:100dvh}
-.setup-card{background:var(--surface);border-radius:18px;padding:24px;box-shadow:var(--shadow);margin-bottom:14px}
-.setup-card h2{font-size:1.05rem;font-weight:700;margin-bottom:4px}
-.setup-card .lead{font-size:.82rem;color:var(--t2);margin-bottom:18px;line-height:1.65}
-.setup-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
-.step-num{width:24px;height:24px;background:#4f46e5;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:1px}
-.step-txt{font-size:.83rem;color:var(--t2);line-height:1.6}
-.step-txt b{color:var(--t1)}
-.setup-code{background:#1e293b;color:#7dd3fc;border-radius:10px;padding:14px;font-size:.72rem;font-family:'Archivo',monospace;line-height:1.7;overflow-x:auto;margin-top:10px;white-space:pre}
-.setup-note{background:#fef3c7;border-radius:10px;padding:12px 14px;font-size:.78rem;color:#92400e;line-height:1.6;border-left:3px solid var(--yellow)}
-
-/* ── AUTH SCREEN ── */
-#authWrap{display:none;min-height:100dvh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--safe-t)+32px) 20px calc(var(--safe-b)+24px);background:linear-gradient(160deg,#eef2ff 0%,var(--bg) 55%)}
-.auth-logo{text-align:center;margin-bottom:28px}
-.auth-logo .ico{font-size:2.6rem;display:block;margin-bottom:8px}
-.auth-logo h2{font-size:1.45rem;font-weight:700;letter-spacing:-.02em}
-.auth-logo p{font-size:.78rem;color:var(--t2);margin-top:4px}
-.auth-card{width:100%;max-width:360px;background:var(--surface);border-radius:20px;padding:26px 22px 22px;box-shadow:0 4px 24px rgba(0,0,0,.10)}
-.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:22px;gap:2px}
-.auth-tab{padding:8px;border:none;background:transparent;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t3);transition:all .15s}
-.auth-tab.on{background:var(--surface);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.10)}
-.auth-field{margin-bottom:13px}
-.auth-field label{font-size:.76rem;font-weight:600;color:var(--t2);display:block;margin-bottom:6px}
-.auth-field input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:.93rem;font-family:inherit;color:var(--t1);background:var(--bg);outline:none;transition:border-color .14s}
-.auth-field input:focus{border-color:#4f46e5;background:#fff}
-.auth-field input.err{border-color:var(--red)}
-.auth-btn{width:100%;padding:13px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;border:none;border-radius:11px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:opacity .15s}
-.auth-btn:active{opacity:.88}
-.auth-btn:disabled{opacity:.55;cursor:not-allowed}
-.auth-msg{font-size:.76rem;color:var(--red);margin-top:10px;text-align:center;min-height:18px;line-height:1.5}
-.auth-msg.ok{color:var(--green)}
-.auth-reset{width:100%;margin-top:10px;background:none;border:none;font-size:.78rem;color:var(--t3);cursor:pointer;font-family:inherit;text-align:center;padding:4px}
-.auth-reset:active{color:var(--t2)}
-
 /* ── HEADER ── */
-.hdr{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);padding:calc(var(--safe-t)+10px) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));display:flex;align-items:center;justify-content:space-between}
+.hdr{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);padding:calc(var(--safe-t)+10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hdr-left{min-width:0}
 .hdr-left h1{font-size:1.12rem;font-weight:700;letter-spacing:-.02em}
 .hdr-left .sub{font-size:.7rem;color:var(--t3);margin-top:1px}
-.hdr-right{display:flex;gap:7px;align-items:center}
-.icon-btn{width:34px;height:34px;border:none;background:var(--bg);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:1.15rem;transition:background .12s;flex-shrink:0}
+.hdr-right{display:flex;gap:7px;flex-shrink:0}
+.icon-btn{width:34px;height:34px;border:none;background:var(--bg);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:1.15rem;transition:background .12s}
 .icon-btn:active{background:#dde1e7}
 .icon-btn.filled{background:var(--t1);color:#fff}
 .icon-btn.filled:active{background:#374151}
-.user-chip{display:flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--border);border-radius:9px;background:var(--bg);font-size:.7rem;color:var(--t2);cursor:pointer;max-width:90px;overflow:hidden;white-space:nowrap;font-family:inherit}
-.user-chip i{font-size:.85rem;flex-shrink:0}
-.user-chip span{overflow:hidden;text-overflow:ellipsis}
 
-/* ── MAIN ── */
-.main{padding:14px 16px calc(88px + var(--safe-b))}
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;z-index:50;padding-bottom:var(--safe-b)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;border:none;background:none;cursor:pointer;font-family:inherit;color:var(--t3);font-size:.68rem;font-weight:600;transition:color .15s}
+.nav-btn i{font-size:1.3rem}
+.nav-btn.on{color:var(--indigo)}
+
+/* ── TABS ── */
+.tab{display:none}
+.tab.on{display:block}
+.main{padding:14px 16px calc(var(--nav-h) + 76px + var(--safe-b))}
 
 /* ── DASHBOARD ── */
 .dash{margin-bottom:14px}
-.dash-big{background:linear-gradient(135deg,#4f46e5 0%,#0ea5e9 100%);border-radius:var(--r);padding:18px 20px;color:#fff;margin-bottom:10px;position:relative;overflow:hidden}
+.dash-big{background:linear-gradient(135deg,#4f46e5,#0ea5e9);border-radius:var(--r);padding:18px 20px;color:#fff;margin-bottom:10px;position:relative;overflow:hidden}
 .dash-big::after{content:'';position:absolute;top:-30px;right:-20px;width:110px;height:110px;background:rgba(255,255,255,.09);border-radius:50%}
 .dash-big-lbl{font-size:.72rem;opacity:.85;margin-bottom:6px;letter-spacing:.02em}
 .dash-big-val{font-family:'Archivo',sans-serif;font-size:2.6rem;font-weight:700;line-height:1;letter-spacing:-.04em}
@@ -99,7 +63,7 @@ body.locked{overflow:hidden}
 /* ── SORT BAR ── */
 .sort-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .sort-bar-lbl{font-size:.82rem;color:var(--t2);font-weight:500}
-.sort-btn{display:flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.78rem;color:var(--t2);cursor:pointer;font-family:inherit;transition:background .12s}
+.sort-btn{display:flex;align-items:center;gap:4px;padding:5px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:.78rem;color:var(--t2);cursor:pointer;font-family:inherit}
 .sort-btn:active{background:var(--bg)}
 
 /* ── ITEM CARDS ── */
@@ -119,28 +83,57 @@ body.locked{overflow:hidden}
 .card-avg.green{color:var(--green)}.card-avg.yellow{color:var(--yellow)}.card-avg.red{color:var(--red)}
 .prog-wrap{margin-bottom:9px}
 .prog-track{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
-.prog-fill{height:100%;border-radius:99px;transition:width .4s ease}
+.prog-fill{height:100%;border-radius:99px}
 .prog-fill.green{background:var(--green)}.prog-fill.yellow{background:var(--yellow)}.prog-fill.red{background:var(--red)}
 .prog-lbl{display:flex;justify-content:space-between;font-size:.66rem;color:var(--t3);margin-top:3px}
 .card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);padding-top:9px;gap:4px}
 .stat{text-align:center}
 .stat-lbl{display:block;font-size:.65rem;color:var(--t3);margin-bottom:2px}
 .stat-val{font-family:'Archivo',sans-serif;font-size:.85rem;font-weight:600}
-.empty{text-align:center;padding:56px 20px;color:var(--t3)}
+.empty{text-align:center;padding:52px 20px;color:var(--t3)}
 .empty .ico{font-size:2.8rem;display:block;margin-bottom:12px}
 .empty h3{font-size:.95rem;color:var(--t2);margin-bottom:7px}
 .empty p{font-size:.82rem;line-height:1.65}
 
-/* ── FAB ── */
-.fab{position:fixed;right:16px;bottom:calc(22px + var(--safe-b));width:54px;height:54px;background:var(--t1);color:#fff;border:none;border-radius:15px;font-size:1.55rem;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.22);z-index:40;transition:transform .13s,box-shadow .13s}
-@media(min-width:480px){.fab{right:calc(50% - 224px)}}
-.fab:active{transform:scale(.94);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+/* ── COMMUNITY FEED ── */
+.feed{display:flex;flex-direction:column;gap:10px}
+.feed-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.feed-toolbar-lbl{font-size:.82rem;color:var(--t2);font-weight:500}
+.feed-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;border-left:4px solid transparent;position:relative}
+.feed-card.green{border-left-color:var(--green)}.feed-card.yellow{border-left-color:var(--yellow)}.feed-card.red{border-left-color:var(--red)}
+.feed-card-body{padding:12px 14px}
+.feed-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.feed-user{display:flex;align-items:center;gap:7px;min-width:0}
+.avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0}
+.feed-nickname{font-size:.78rem;font-weight:600;color:var(--t2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:80px}
+.feed-time{font-size:.68rem;color:var(--t3);flex-shrink:0}
+.feed-del{width:24px;height:24px;border:none;background:none;cursor:pointer;color:var(--t3);font-size:.85rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.feed-del:active{background:#fef2f2;color:var(--red)}
+.feed-row2{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.feed-name{font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:7px}
+.feed-avg{font-family:'Archivo',sans-serif;font-weight:700;font-size:1rem;white-space:nowrap;flex-shrink:0;display:flex;align-items:baseline;gap:2px}
+.feed-avg .unit{font-size:.65rem;font-weight:400;opacity:.8}
+.feed-avg.green{color:var(--green)}.feed-avg.yellow{color:var(--yellow)}.feed-avg.red{color:var(--red)}
+.feed-row3{font-size:.72rem;color:var(--t3);display:flex;gap:8px;flex-wrap:wrap}
+.feed-note{font-size:.78rem;color:var(--t2);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);line-height:1.5}
+.setup-hint{background:var(--surface);border-radius:var(--r);padding:20px;text-align:center;box-shadow:var(--shadow);margin-top:8px}
+.setup-hint .ico{font-size:2rem;display:block;margin-bottom:10px}
+.setup-hint h3{font-size:.95rem;font-weight:600;margin-bottom:8px}
+.setup-hint p{font-size:.8rem;color:var(--t2);line-height:1.65;margin-bottom:14px}
+.setup-hint a{color:var(--indigo);text-decoration:none;font-weight:600}
+.setup-steps{text-align:left;margin-top:12px}
+.setup-steps li{font-size:.78rem;color:var(--t2);line-height:1.7;padding-left:4px}
+.setup-code{background:#1e293b;color:#7dd3fc;border-radius:8px;padding:12px;font-size:.68rem;font-family:'Archivo',monospace;line-height:1.8;overflow-x:auto;white-space:pre;margin-top:10px;text-align:left}
 
-/* ── OVERLAY ── */
+/* ── FAB ── */
+.fab{position:fixed;right:16px;bottom:calc(var(--nav-h) + var(--safe-b) + 14px);width:52px;height:52px;background:var(--t1);color:#fff;border:none;border-radius:14px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.22);z-index:40;transition:transform .13s,box-shadow .13s}
+@media(min-width:480px){.fab{right:calc(50% - 224px)}}
+.fab:active{transform:scale(.94)}
+.fab.community{background:linear-gradient(135deg,#4f46e5,#0ea5e9)}
+
+/* ── OVERLAY & SHEETS ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:90;pointer-events:none;transition:background .22s}
 .overlay.on{background:rgba(0,0,0,.48);pointer-events:all}
-
-/* ── SHEET ── */
 .sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--surface);border-radius:20px 20px 0 0;z-index:91;transition:transform .3s cubic-bezier(.32,.72,0,1);max-height:92dvh;display:flex;flex-direction:column}
 .sheet.on{transform:translateX(-50%) translateY(0)}
 .sheet-pill{width:38px;height:4px;background:var(--border);border-radius:99px;margin:11px auto 0;flex-shrink:0}
@@ -150,11 +143,11 @@ body.locked{overflow:hidden}
 .sheet-body{overflow-y:auto;flex:1;padding:16px 18px;padding-bottom:calc(16px + var(--safe-b));-webkit-overflow-scrolling:touch}
 
 /* ── FORM ── */
-.f-sec{margin-bottom:18px}
+.f-sec{margin-bottom:17px}
 .f-lbl{font-size:.78rem;font-weight:600;color:var(--t2);margin-bottom:7px;display:block;letter-spacing:.02em}
 .f-lbl .req{color:var(--red)}
 .f-inp{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:.93rem;font-family:inherit;color:var(--t1);background:var(--bg);outline:none;transition:border-color .14s}
-.f-inp:focus{border-color:#4f46e5;background:#fff}
+.f-inp:focus{border-color:var(--indigo);background:#fff}
 .f-inp::placeholder{color:var(--t3)}
 .f-inp.err{border-color:var(--red)}
 .f-err{font-size:.72rem;color:var(--red);margin-top:4px;display:none}
@@ -164,15 +157,17 @@ body.locked{overflow:hidden}
 .cat-opt{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 3px;border:2px solid var(--border);border-radius:10px;cursor:pointer;background:var(--bg);transition:all .13s;font-family:inherit}
 .cat-opt .emo{font-size:1.3rem;line-height:1}
 .cat-opt .txt{font-size:.58rem;color:var(--t2);text-align:center;line-height:1.2}
-.cat-opt.sel{border-color:#4f46e5;background:#eef2ff}
-.cat-opt.sel .txt{color:#4f46e5}
+.cat-opt.sel{border-color:var(--indigo);background:#eef2ff}
+.cat-opt.sel .txt{color:var(--indigo)}
 .f-actions{display:flex;gap:9px;margin-top:22px}
 .btn{flex:1;padding:12px;border:none;border-radius:11px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .13s,transform .1s}
 .btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 .btn-save{background:var(--t1);color:#fff}
+.btn-share{background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff}
 .btn-del{background:#fef2f2;color:var(--red);flex:0 0 auto;padding:12px 14px}
 
-/* ── DETAIL ── */
+/* ── DETAIL SHEET ── */
 .det-hero{text-align:center;padding:22px 0 14px}
 .det-hero-lbl{font-size:.72rem;color:var(--t3);margin-bottom:7px}
 .det-hero-val{font-family:'Archivo',sans-serif;font-size:3.4rem;font-weight:700;line-height:1;letter-spacing:-.04em}
@@ -187,138 +182,40 @@ body.locked{overflow:hidden}
 .det-note{background:var(--bg);border-radius:10px;padding:13px;margin-bottom:14px}
 .det-note-lbl{font-size:.7rem;color:var(--t3);margin-bottom:5px}
 .det-note-txt{font-size:.88rem;color:var(--t2);line-height:1.65}
-.det-edit-btn{width:100%;padding:13px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t1);display:flex;align-items:center;justify-content:center;gap:6px;transition:background .13s}
+.det-edit-btn{width:100%;padding:13px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t1);display:flex;align-items:center;justify-content:center;gap:6px;transition:background .13s;margin-bottom:10px}
 .det-edit-btn:active{background:#e5e7eb}
+.det-share-btn{width:100%;padding:13px;background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:12px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--indigo);display:flex;align-items:center;justify-content:center;gap:6px;transition:background .13s}
+.det-share-btn:active{background:#e0e7ff}
 
-/* ── INFO SHEET ── */
+/* ── INFO ── */
 .info-sec{margin-bottom:22px}
 .info-sec h3{font-size:.88rem;font-weight:600;margin-bottom:7px}
 .info-sec p{font-size:.83rem;line-height:1.7;color:var(--t2)}
-.info-formula{background:var(--bg);border-radius:9px;padding:11px 13px;font-size:.83rem;color:var(--t2);font-family:'Archivo',sans-serif;margin-top:8px;border-left:3px solid #4f46e5;line-height:1.6}
+.info-formula{background:var(--bg);border-radius:9px;padding:11px 13px;font-size:.83rem;color:var(--t2);font-family:'Archivo',sans-serif;margin-top:8px;border-left:3px solid var(--indigo);line-height:1.6}
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:6px;font-size:.75rem;font-weight:600;margin:3px 2px;font-family:'Archivo',sans-serif}
 .badge.green{background:#d1fae5;color:#065f46}.badge.yellow{background:#fef3c7;color:#92400e}.badge.red{background:#fee2e2;color:#991b1b}
 
-/* ── USER SHEET ── */
-.user-sheet-body{padding:20px 18px calc(20px + var(--safe-b))}
-.user-avatar{width:52px;height:52px;background:linear-gradient(135deg,#4f46e5,#0ea5e9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;margin:0 auto 12px}
-.user-email-txt{text-align:center;font-size:.88rem;color:var(--t2);word-break:break-all;margin-bottom:20px}
-.logout-btn{width:100%;padding:13px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;color:var(--red);font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .13s}
-.logout-btn:active{background:#fee2e2}
-
 /* ── TOAST ── */
-.toast{position:fixed;bottom:calc(82px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(14px);background:#1f2937;color:#fff;padding:9px 20px;border-radius:99px;font-size:.82rem;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;z-index:200}
+.toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 14px);left:50%;transform:translateX(-50%) translateY(14px);background:#1f2937;color:#fff;padding:9px 20px;border-radius:99px;font-size:.82rem;white-space:nowrap;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;z-index:200}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 
-<!-- ── LOADING ── -->
-<div id="loading"><div class="spin"></div><p>加载中…</p></div>
-
-<!-- ── SETUP SCREEN ── -->
-<div id="setupWrap">
-  <div style="padding:calc(var(--safe-t)+24px) 0 8px;text-align:center">
-    <span style="font-size:1.8rem">⚙️</span>
-    <h2 style="margin-top:8px;font-size:1.1rem">需要配置 Firebase</h2>
-    <p style="font-size:.8rem;color:var(--t2);margin-top:4px">首次部署请按以下步骤操作（约 10 分钟）</p>
+<!-- ── HEADER ── -->
+<header class="hdr" id="hdr">
+  <div class="hdr-left">
+    <h1 id="hdrTitle">日均费用</h1>
+    <div class="sub" id="hdrSub"></div>
   </div>
-  <div style="height:16px"></div>
-
-  <div class="setup-card">
-    <h2>第一步：创建 Firebase 项目</h2>
-    <p class="lead">Firebase 是 Google 的免费后端平台，免费额度完全够个人使用。</p>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-txt">打开 <b>firebase.google.com</b>，用 Google 账号登录，点击「创建项目」</div></div>
-    <div class="setup-step"><div class="step-num">2</div><div class="step-txt">输入项目名（例如 <b>daily-cost</b>），关闭 Google Analytics，点击「创建」</div></div>
-    <div class="setup-step"><div class="step-num">3</div><div class="step-txt">进入项目后，点击左侧「<b>Firestore Database</b>」→「创建数据库」→ 选「以生产模式启动」→「完成」</div></div>
-    <div class="setup-step"><div class="step-num">4</div><div class="step-txt">点击左侧「<b>Authentication</b>」→「开始」→「电子邮件地址/密码」→ 启用 → 保存</div></div>
+  <div class="hdr-right" id="hdrRight">
+    <button class="icon-btn" id="btnInfo"><i class="ti ti-info-circle"></i></button>
+    <button class="icon-btn filled" id="btnAdd"><i class="ti ti-plus"></i></button>
   </div>
+</header>
 
-  <div class="setup-card">
-    <h2>第二步：获取配置代码</h2>
-    <p class="lead">在 Firebase 控制台获取你的项目配置。</p>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-txt">点击左上角「项目设置」（齿轮图标）→「常规」→ 下滑到「您的应用」</div></div>
-    <div class="setup-step"><div class="step-num">2</div><div class="step-txt">点击「<b>&lt;/&gt;</b>」（Web 应用）→ 输入应用名称 → 注册应用</div></div>
-    <div class="setup-step"><div class="step-num">3</div><div class="step-txt">复制出现的 <b>firebaseConfig</b> 对象（包含 apiKey 等 6 个字段）</div></div>
-  </div>
-
-  <div class="setup-card">
-    <h2>第三步：修改 index.html</h2>
-    <p class="lead">将配置填入代码顶部，然后重新推送到 GitHub。</p>
-    <div class="setup-step"><div class="step-num">1</div><div class="step-txt">打开 GitHub 仓库中的 <b>index.html</b>，找到以下位置</div></div>
-    <div class="setup-code">// ===== FIREBASE CONFIG =====
-const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  ...</div>
-    <div class="setup-step" style="margin-top:14px"><div class="step-num">2</div><div class="step-txt">把 <b>YOUR_...</b> 占位符替换成你从 Firebase 复制的真实值，保存提交</div></div>
-  </div>
-
-  <div class="setup-card">
-    <h2>第四步：设置安全规则</h2>
-    <p class="lead">在 Firestore 控制台 → 规则，替换为以下内容并发布：</p>
-    <div class="setup-code">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid}/{doc=**} {
-      allow read, write:
-        if request.auth != null
-        && request.auth.uid == uid;
-    }
-  }
-}</div>
-  </div>
-
-  <div class="setup-note">⚠️ 提示：Firebase 在中国大陆需要科学上网，建议在有网络条件时完成配置。</div>
-  <div style="height:32px"></div>
-</div>
-
-<!-- ── AUTH SCREEN ── -->
-<div id="authWrap">
-  <div class="auth-logo">
-    <span class="ico">📊</span>
-    <h2>日均费用</h2>
-    <p>记录每一件物品的摊销成本</p>
-  </div>
-  <div class="auth-card">
-    <div class="auth-tabs">
-      <button class="auth-tab on" id="tabLogin">登录</button>
-      <button class="auth-tab" id="tabReg">注册</button>
-    </div>
-    <div class="auth-field">
-      <label>邮箱</label>
-      <input type="email" id="aEmail" placeholder="your@email.com" autocomplete="email" inputmode="email">
-    </div>
-    <div class="auth-field">
-      <label>密码</label>
-      <input type="password" id="aPwd" placeholder="至少 6 位" autocomplete="current-password">
-    </div>
-    <div class="auth-field" id="aPwdCWrap" style="display:none">
-      <label>确认密码</label>
-      <input type="password" id="aPwdC" placeholder="再次输入密码" autocomplete="new-password">
-    </div>
-    <button class="auth-btn" id="aSubmit">登录</button>
-    <div class="auth-msg" id="aMsg"></div>
-    <button class="auth-reset" id="aReset">忘记密码？发送重置邮件</button>
-  </div>
-</div>
-
-<!-- ── MAIN APP ── -->
-<div id="app" style="display:none">
-  <header class="hdr">
-    <div class="hdr-left">
-      <h1>日均费用</h1>
-      <div class="sub" id="hdrDate"></div>
-    </div>
-    <div class="hdr-right">
-      <button class="icon-btn" id="btnInfo" aria-label="说明"><i class="ti ti-info-circle"></i></button>
-      <button class="user-chip" id="btnUser">
-        <i class="ti ti-user-circle"></i>
-        <span id="userEmailTxt"></span>
-      </button>
-      <button class="icon-btn filled" id="btnHdrAdd" aria-label="添加"><i class="ti ti-plus"></i></button>
-    </div>
-  </header>
-
+<!-- ── 我的 TAB ── -->
+<div class="tab on" id="tabMine">
   <main class="main">
     <section class="dash">
       <div class="dash-big">
@@ -327,47 +224,48 @@ service cloud.firestore {
         <div class="dash-big-sub num" id="dTotalSub">本月约 ¥0 · 本年约 ¥0</div>
       </div>
       <div class="dash-row">
-        <div class="dash-sm">
-          <div class="dash-sm-lbl">追踪物品数</div>
-          <div class="dash-sm-val num" id="dCount">0</div>
-          <div class="dash-sm-sub" id="dCountSub">件物品</div>
-        </div>
-        <div class="dash-sm">
-          <div class="dash-sm-lbl">日均最贵</div>
-          <div class="dash-sm-val num" id="dTopVal">—</div>
-          <div class="dash-sm-sub" id="dTopName">暂无记录</div>
-        </div>
+        <div class="dash-sm"><div class="dash-sm-lbl">追踪物品数</div><div class="dash-sm-val num" id="dCount">0</div><div class="dash-sm-sub" id="dCountSub">件物品</div></div>
+        <div class="dash-sm"><div class="dash-sm-lbl">日均最贵</div><div class="dash-sm-val num" id="dTopVal">—</div><div class="dash-sm-sub" id="dTopName">暂无记录</div></div>
       </div>
     </section>
     <div class="sort-bar">
       <span class="sort-bar-lbl" id="listLbl">共 0 件</span>
-      <button class="sort-btn" id="btnSort">
-        <i class="ti ti-arrows-sort" style="font-size:.88rem"></i>
-        <span id="sortTxt">日均 ↓</span>
-      </button>
+      <button class="sort-btn" id="btnSort"><i class="ti ti-arrows-sort" style="font-size:.88rem"></i><span id="sortTxt">日均 ↓</span></button>
     </div>
     <div class="list" id="itemList"></div>
   </main>
-
-  <button class="fab" id="fab" aria-label="添加物品"><i class="ti ti-plus"></i></button>
 </div>
+
+<!-- ── 广场 TAB ── -->
+<div class="tab" id="tabFeed">
+  <main class="main">
+    <div class="feed-toolbar">
+      <span class="sort-bar-lbl" id="feedLbl">共 0 条</span>
+      <span style="font-size:.72rem;color:var(--t3)">实时更新</span>
+    </div>
+    <div class="feed" id="feedList"></div>
+  </main>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="nav">
+  <button class="nav-btn on" id="navMine"><i class="ti ti-layout-grid"></i>我的</button>
+  <button class="nav-btn" id="navFeed"><i class="ti ti-users"></i>广场</button>
+</nav>
+
+<!-- ── FAB ── -->
+<button class="fab" id="fab"><i class="ti ti-plus"></i></button>
 
 <!-- ── OVERLAY ── -->
 <div class="overlay" id="overlay"></div>
 
-<!-- ── FORM SHEET ── -->
+<!-- ── 个人物品 SHEET ── -->
 <div class="sheet" id="sheetForm">
   <div class="sheet-pill"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-ttl" id="formTitle">添加物品</span>
-    <button class="sheet-close" id="formClose"><i class="ti ti-x"></i></button>
-  </div>
+  <div class="sheet-hdr"><span class="sheet-ttl" id="formTitle">添加物品</span><button class="sheet-close" id="formClose"><i class="ti ti-x"></i></button></div>
   <div class="sheet-body">
     <form id="theForm" novalidate>
-      <div class="f-sec">
-        <label class="f-lbl">品类</label>
-        <div class="cat-grid" id="catGrid"></div>
-      </div>
+      <div class="f-sec"><label class="f-lbl">品类</label><div class="cat-grid" id="catGrid"></div></div>
       <div class="f-sec">
         <label class="f-lbl" for="fName">物品名称 <span class="req">*</span></label>
         <input type="text" id="fName" class="f-inp" placeholder="例：iPhone 15 Pro" maxlength="30">
@@ -375,28 +273,14 @@ service cloud.firestore {
       </div>
       <div class="f-sec">
         <div class="f-row">
-          <div>
-            <label class="f-lbl" for="fPrice">购入价格（元）<span class="req">*</span></label>
-            <input type="number" id="fPrice" class="f-inp" placeholder="0.00" min="0.01" step="0.01">
-            <div class="f-err" id="ePrice">请输入有效金额</div>
-          </div>
-          <div>
-            <label class="f-lbl" for="fDate">购买日期 <span class="req">*</span></label>
-            <input type="date" id="fDate" class="f-inp">
-            <div class="f-err" id="eDate">不能选未来日期</div>
-          </div>
+          <div><label class="f-lbl" for="fPrice">购入价格（元）<span class="req">*</span></label><input type="number" id="fPrice" class="f-inp" placeholder="0.00" min="0.01" step="0.01"><div class="f-err" id="ePrice">请输入有效金额</div></div>
+          <div><label class="f-lbl" for="fDate">购买日期 <span class="req">*</span></label><input type="date" id="fDate" class="f-inp"><div class="f-err" id="eDate">不能选未来日期</div></div>
         </div>
       </div>
       <div class="f-sec">
         <div class="f-row">
-          <div>
-            <label class="f-lbl" for="fYears">预计使用年限</label>
-            <input type="number" id="fYears" class="f-inp" placeholder="例：3" min="0.1" max="30" step="0.1">
-          </div>
-          <div>
-            <label class="f-lbl" for="fNote">备注</label>
-            <input type="text" id="fNote" class="f-inp" placeholder="可选" maxlength="50">
-          </div>
+          <div><label class="f-lbl" for="fYears">预计使用年限</label><input type="number" id="fYears" class="f-inp" placeholder="例：3" min="0.1" max="30" step="0.1"></div>
+          <div><label class="f-lbl" for="fNote">备注</label><input type="text" id="fNote" class="f-inp" placeholder="可选" maxlength="50"></div>
         </div>
       </div>
       <input type="hidden" id="fId">
@@ -408,58 +292,58 @@ service cloud.firestore {
   </div>
 </div>
 
-<!-- ── DETAIL SHEET ── -->
+<!-- ── 详情 SHEET ── -->
 <div class="sheet" id="sheetDet">
   <div class="sheet-pill"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-ttl" id="detTitle">详情</span>
-    <button class="sheet-close" id="detClose"><i class="ti ti-x"></i></button>
-  </div>
+  <div class="sheet-hdr"><span class="sheet-ttl" id="detTitle">详情</span><button class="sheet-close" id="detClose"><i class="ti ti-x"></i></button></div>
   <div class="sheet-body" id="detBody"></div>
 </div>
 
-<!-- ── USER SHEET ── -->
-<div class="sheet" id="sheetUser">
+<!-- ── 分享到广场 SHEET ── -->
+<div class="sheet" id="sheetShare">
   <div class="sheet-pill"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-ttl">我的账号</span>
-    <button class="sheet-close" id="userClose"><i class="ti ti-x"></i></button>
-  </div>
-  <div class="user-sheet-body">
-    <div class="user-avatar"><i class="ti ti-user"></i></div>
-    <div class="user-email-txt" id="userEmailFull"></div>
-    <button class="logout-btn" id="btnLogout"><i class="ti ti-logout"></i> 退出登录</button>
+  <div class="sheet-hdr"><span class="sheet-ttl">分享到广场</span><button class="sheet-close" id="shareClose"><i class="ti ti-x"></i></button></div>
+  <div class="sheet-body">
+    <form id="shareForm" novalidate>
+      <div class="f-sec">
+        <label class="f-lbl" for="sNickname">你的昵称 <span class="req">*</span></label>
+        <input type="text" id="sNickname" class="f-inp" placeholder="例：小明" maxlength="12">
+        <div class="f-err" id="eNickname">请输入昵称</div>
+      </div>
+      <div class="f-sec"><label class="f-lbl">品类</label><div class="cat-grid" id="sCatGrid"></div></div>
+      <div class="f-sec">
+        <label class="f-lbl" for="sName">物品名称 <span class="req">*</span></label>
+        <input type="text" id="sName" class="f-inp" placeholder="例：MacBook Pro" maxlength="30">
+        <div class="f-err" id="eSName">请输入物品名称</div>
+      </div>
+      <div class="f-sec">
+        <div class="f-row">
+          <div><label class="f-lbl" for="sPrice">购入价格（元）<span class="req">*</span></label><input type="number" id="sPrice" class="f-inp" placeholder="0.00" min="0.01" step="0.01"><div class="f-err" id="eSPrice">请输入有效金额</div></div>
+          <div><label class="f-lbl" for="sDate">购买日期 <span class="req">*</span></label><input type="date" id="sDate" class="f-inp"><div class="f-err" id="eSDate">不能选未来日期</div></div>
+        </div>
+      </div>
+      <div class="f-sec">
+        <div class="f-row">
+          <div><label class="f-lbl" for="sYears">预计使用年限</label><input type="number" id="sYears" class="f-inp" placeholder="例：3" min="0.1" max="30" step="0.1"></div>
+          <div><label class="f-lbl" for="sNote">留言</label><input type="text" id="sNote" class="f-inp" placeholder="说点什么…" maxlength="50"></div>
+        </div>
+      </div>
+      <div class="f-actions">
+        <button type="submit" class="btn btn-share" id="btnShareSubmit"><i class="ti ti-send" style="font-size:.9rem"></i> 发布到广场</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <!-- ── INFO SHEET ── -->
 <div class="sheet" id="sheetInfo">
   <div class="sheet-pill"></div>
-  <div class="sheet-hdr">
-    <span class="sheet-ttl">使用说明</span>
-    <button class="sheet-close" id="infoClose"><i class="ti ti-x"></i></button>
-  </div>
+  <div class="sheet-hdr"><span class="sheet-ttl">使用说明</span><button class="sheet-close" id="infoClose"><i class="ti ti-x"></i></button></div>
   <div class="sheet-body">
-    <div class="info-sec">
-      <h3>什么是日均费用？</h3>
-      <p>日均费用衡量一件物品每天"消耗"了多少钱。用得越久，日均越低。灵感来自有数 App 的资产摊销——把一次性大额消费分摊到每一天，帮你判断东西值不值、该不该换。</p>
-    </div>
-    <div class="info-sec">
-      <h3>计算公式</h3>
-      <div class="info-formula">日均 = 购入价格 ÷ max(今天 − 购买日期, 1天)<br>本月 = 日均 × 30　本年 = 日均 × 365</div>
-    </div>
-    <div class="info-sec">
-      <h3>颜色含义</h3>
-      <p>
-        <span class="badge green">＜ ¥10 / 天</span> 很划算，继续用下去<br>
-        <span class="badge yellow">¥10 ~ 50 / 天</span> 适中，正常消费水平<br>
-        <span class="badge red">＞ ¥50 / 天</span> 偏贵，考虑是否值得
-      </p>
-    </div>
-    <div class="info-sec">
-      <h3>账号与数据</h3>
-      <p>数据保存在云端，同一账号在任何设备上都能看到。每个账号的数据完全独立，互不可见。</p>
-    </div>
+    <div class="info-sec"><h3>日均费用</h3><p>用购入价格除以已使用天数，衡量一件物品每天"消耗"多少钱。用得越久越便宜，帮你判断东西值不值、该不该换。</p></div>
+    <div class="info-sec"><h3>计算公式</h3><div class="info-formula">日均 = 购入价格 ÷ max(今天 − 购买日期, 1天)<br>本月 = 日均 × 30　　本年 = 日均 × 365</div></div>
+    <div class="info-sec"><h3>颜色含义</h3><p><span class="badge green">＜ ¥10 / 天</span> 很划算<br><span class="badge yellow">¥10 ~ 50 / 天</span> 适中<br><span class="badge red">＞ ¥50 / 天</span> 偏贵</p></div>
+    <div class="info-sec"><h3>广场</h3><p>无需账号，填写昵称即可把你的物品发布到共享广场，所有人都能看到彼此的数据。「我的」数据只存在本地，不会自动同步到广场。</p></div>
   </div>
 </div>
 
@@ -469,10 +353,10 @@ service cloud.firestore {
 <script>
 'use strict';
 
-// ╔══════════════════════════════════════════╗
-// ║         FIREBASE CONFIG                 ║
-// ║  替换为你的项目配置后重新提交到 GitHub    ║
-// ╚══════════════════════════════════════════╝
+// ╔══════════════════════════════════╗
+// ║      FIREBASE CONFIG            ║
+// ║  填入你的项目配置后重新提交     ║
+// ╚══════════════════════════════════╝
 const FIREBASE_CONFIG = {
   apiKey:            "YOUR_API_KEY",
   authDomain:        "YOUR_PROJECT.firebaseapp.com",
@@ -481,184 +365,237 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "YOUR_SENDER_ID",
   appId:             "YOUR_APP_ID"
 };
-// ═══════════════════════════════════════════
+// ════════════════════════════════════
 
-/* ── 检查是否已配置 ── */
 const IS_SET = !FIREBASE_CONFIG.apiKey.startsWith('YOUR_');
-if (!IS_SET) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('setupWrap').style.display = 'block';
-  throw new Error('Firebase not configured');
-}
+let db = null, unsubFeed = null;
 
-/* ── 初始化 Firebase ── */
-firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
-const db   = firebase.firestore();
+if (IS_SET) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  db.enablePersistence().catch(()=>{});
+}
 
 /* ── 常量 ── */
-const CATS = [
-  {k:'phone',    e:'📱',n:'手机/平板',c:'#6366f1',bg:'#eef2ff'},
-  {k:'laptop',   e:'💻',n:'电脑',     c:'#3b82f6',bg:'#eff6ff'},
-  {k:'camera',   e:'📷',n:'相机',     c:'#ec4899',bg:'#fdf2f8'},
-  {k:'gaming',   e:'🎮',n:'游戏',     c:'#8b5cf6',bg:'#f5f3ff'},
-  {k:'audio',    e:'🎧',n:'音频',     c:'#14b8a6',bg:'#f0fdfa'},
-  {k:'home',     e:'🏠',n:'家电',     c:'#f97316',bg:'#fff7ed'},
-  {k:'transport',e:'🚲',n:'交通',     c:'#22c55e',bg:'#f0fdf4'},
-  {k:'wear',     e:'👟',n:'穿戴',     c:'#f59e0b',bg:'#fffbeb'},
-  {k:'edu',      e:'📚',n:'书/课程',  c:'#ef4444',bg:'#fef2f2'},
-  {k:'other',    e:'📦',n:'其他',     c:'#6b7280',bg:'#f9fafb'},
+const CATS=[
+  {k:'phone',e:'📱',n:'手机/平板',c:'#6366f1',bg:'#eef2ff'},
+  {k:'laptop',e:'💻',n:'电脑',c:'#3b82f6',bg:'#eff6ff'},
+  {k:'camera',e:'📷',n:'相机',c:'#ec4899',bg:'#fdf2f8'},
+  {k:'gaming',e:'🎮',n:'游戏',c:'#8b5cf6',bg:'#f5f3ff'},
+  {k:'audio',e:'🎧',n:'音频',c:'#14b8a6',bg:'#f0fdfa'},
+  {k:'home',e:'🏠',n:'家电',c:'#f97316',bg:'#fff7ed'},
+  {k:'transport',e:'🚲',n:'交通',c:'#22c55e',bg:'#f0fdf4'},
+  {k:'wear',e:'👟',n:'穿戴',c:'#f59e0b',bg:'#fffbeb'},
+  {k:'edu',e:'📚',n:'书/课程',c:'#ef4444',bg:'#fef2f2'},
+  {k:'other',e:'📦',n:'其他',c:'#6b7280',bg:'#f9fafb'},
 ];
-const SORTS = [
-  {lbl:'日均 ↓', fn:(a,b)=>avg(b)-avg(a)},
-  {lbl:'日均 ↑', fn:(a,b)=>avg(a)-avg(b)},
-  {lbl:'日期 ↓', fn:(a,b)=>(a.d<b.d?1:-1)},
+const SORTS=[
+  {lbl:'日均 ↓',fn:(a,b)=>avg(b)-avg(a)},
+  {lbl:'日均 ↑',fn:(a,b)=>avg(a)-avg(b)},
+  {lbl:'日期 ↓',fn:(a,b)=>(a.d<b.d?1:-1)},
 ];
+const AVATAR_COLORS=['#6366f1','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#22c55e','#f59e0b','#ef4444','#64748b'];
 
 /* ── 状态 ── */
-let items=[], sortIdx=0, selCat='other', editId=null, uid=null, unsubItems=null;
+let items=[],sortIdx=0,selCat='other',sSelCat='other',editId=null,activeTab='mine';
 
-/* ── 工具函数 ── */
-const esc = s => String(s)
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+/* ── 工具 ── */
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const todayStr=()=>new Date().toISOString().slice(0,10);
+function daysUsed(ds){const[y,m,d]=ds.split('-').map(Number);const s=new Date(y,m-1,d);s.setHours(0,0,0,0);const n=new Date();n.setHours(0,0,0,0);return Math.max(Math.floor((n-s)/86400000),1);}
+function avg(i){return i.price/daysUsed(i.d);}
+function cls(v){return v<10?'green':v<=50?'yellow':'red';}
+function fmt(n){if(n>=10000)return'¥'+(n/10000).toFixed(1)+'万';if(n>=1000)return'¥'+n.toFixed(0);return'¥'+n.toFixed(2);}
+function fmtF(n){if(n>=10000)return'¥'+(n/10000).toFixed(2)+'万';return'¥'+n.toFixed(2);}
+function fmtDur(d){if(d<30)return d+'天';if(d<365){const m=Math.floor(d/30),r=d%30;return r?m+'个月'+r+'天':m+'个月';}const y=Math.floor(d/365),m=Math.floor((d%365)/30);return m?y+'年'+m+'个月':y+'年';}
+function catOf(k){return CATS.find(c=>c.k===k)||CATS[CATS.length-1];}
+function avatarColor(name){let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length];}
+function timeAgo(ts){if(!ts)return'';const s=Math.floor((Date.now()-ts.toMillis())/1000);if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+'分钟前';if(s<86400)return Math.floor(s/3600)+'小时前';if(s<172800)return'昨天';return Math.floor(s/86400)+'天前';}
 
-const todayStr = () => new Date().toISOString().slice(0,10);
+/* ── 本地用户 ID ── */
+function myId(){let id=localStorage.getItem('_uid');if(!id){id=Date.now().toString(36)+Math.random().toString(36).slice(2);localStorage.setItem('_uid',id);}return id;}
+function savedNickname(){return localStorage.getItem('_nick')||'';}
+function saveNickname(n){localStorage.setItem('_nick',n);}
 
-function daysUsed(ds) {
-  const [y,m,d] = ds.split('-').map(Number);
-  const s = new Date(y,m-1,d); s.setHours(0,0,0,0);
-  const n = new Date();         n.setHours(0,0,0,0);
-  return Math.max(Math.floor((n-s)/86400000),1);
+/* ── localStorage (我的) ── */
+const SK='cost-items';
+function loadItems(){try{items=JSON.parse(localStorage.getItem(SK)||'[]');}catch{items=[];}}
+function saveItems(){localStorage.setItem(SK,JSON.stringify(items));}
+
+/* ── 渲染 我的 ── */
+function renderDash(){
+  const total=items.reduce((s,i)=>s+avg(i),0);
+  document.getElementById('dTotal').textContent=fmt(total);
+  document.getElementById('dTotalSub').textContent=`本月约 ${fmt(total*30)} · 本年约 ${fmt(total*365)}`;
+  document.getElementById('dCount').textContent=items.length;
+  if(!items.length){document.getElementById('dTopVal').textContent='—';document.getElementById('dTopName').textContent='暂无记录';}
+  else{const top=items.reduce((a,b)=>avg(a)>avg(b)?a:b);document.getElementById('dTopVal').textContent=fmt(avg(top));document.getElementById('dTopName').textContent=top.name;}
 }
-function avg(i)   { return i.price / daysUsed(i.d); }
-function cls(v)   { return v<10?'green':v<=50?'yellow':'red'; }
-function fmt(n)   { if(n>=10000)return'¥'+(n/10000).toFixed(1)+'万'; if(n>=1000)return'¥'+n.toFixed(0); return'¥'+n.toFixed(2); }
-function fmtF(n)  { if(n>=10000)return'¥'+(n/10000).toFixed(2)+'万'; return'¥'+n.toFixed(2); }
-function fmtDur(d){ if(d<30)return d+'天'; if(d<365){const m=Math.floor(d/30),r=d%30;return r?m+'个月'+r+'天':m+'个月'} const y=Math.floor(d/365),m=Math.floor((d%365)/30);return m?y+'年'+m+'个月':y+'年'; }
-function catOf(k) { return CATS.find(c=>c.k===k)||CATS[CATS.length-1]; }
-
-/* ── Firestore 操作 ── */
-function col() { return db.collection('users').doc(uid).collection('items'); }
-
-function listenItems() {
-  if (unsubItems) unsubItems();
-  unsubItems = col().onSnapshot(
-    snap => { items = snap.docs.map(d=>({...d.data(),id:d.id})); render(); },
-    err  => toast('同步错误：'+err.code)
-  );
-}
-
-async function dbAdd(data) {
-  await col().add(data);
-}
-async function dbUpdate(id, data) {
-  await col().doc(id).set(data, {merge:true});
-}
-async function dbDelete(id) {
-  await col().doc(id).delete();
-}
-
-/* ── 渲染 ── */
-function renderDash() {
-  const total = items.reduce((s,i)=>s+avg(i),0);
-  document.getElementById('dTotal').textContent    = fmt(total);
-  document.getElementById('dTotalSub').textContent = `本月约 ${fmt(total*30)} · 本年约 ${fmt(total*365)}`;
-  document.getElementById('dCount').textContent    = items.length;
-  if (!items.length) {
-    document.getElementById('dTopVal').textContent  = '—';
-    document.getElementById('dTopName').textContent = '暂无记录';
-  } else {
-    const top = items.reduce((a,b)=>avg(a)>avg(b)?a:b);
-    document.getElementById('dTopVal').textContent  = fmt(avg(top));
-    document.getElementById('dTopName').textContent = top.name;
-  }
-}
-
-function renderList() {
-  const el = document.getElementById('itemList');
-  const sorted = [...items].sort(SORTS[sortIdx].fn);
-  document.getElementById('listLbl').textContent = `共 ${items.length} 件`;
-  if (!sorted.length) {
-    el.innerHTML = `<div class="empty"><span class="ico">📦</span><h3>还没有记录</h3><p>点击右下角 + 按钮<br>添加第一件物品</p></div>`;
-    return;
-  }
-  el.innerHTML = sorted.map(item => {
+function renderList(){
+  const el=document.getElementById('itemList'),sorted=[...items].sort(SORTS[sortIdx].fn);
+  document.getElementById('listLbl').textContent=`共 ${items.length} 件`;
+  if(!sorted.length){el.innerHTML=`<div class="empty"><span class="ico">📦</span><h3>还没有记录</h3><p>点击右下角 + 按钮<br>添加第一件物品</p></div>`;return;}
+  el.innerHTML=sorted.map(item=>{
     const a=avg(item),c=cls(a),cat=catOf(item.cat),days=daysUsed(item.d),dur=fmtDur(days);
     let prog='';
-    if (item.yr>0) {
-      const pct=Math.min(days/(item.yr*365)*100,100).toFixed(1);
-      prog=`<div class="prog-wrap"><div class="prog-track"><div class="prog-fill ${c}" style="width:${pct}%"></div></div><div class="prog-lbl"><span>${dur}</span><span>预计${item.yr}年·${pct}%</span></div></div>`;
-    }
+    if(item.yr>0){const pct=Math.min(days/(item.yr*365)*100,100).toFixed(1);prog=`<div class="prog-wrap"><div class="prog-track"><div class="prog-fill ${c}" style="width:${pct}%"></div></div><div class="prog-lbl"><span>${dur}</span><span>预计${item.yr}年·${pct}%</span></div></div>`;}
     return `<div class="card ${c}" data-id="${esc(item.id)}"><div class="card-body">
-      <div class="card-top">
-        <div class="card-left">
-          <div class="cat-ico" style="background:${cat.bg}">${cat.e}</div>
-          <div class="card-info">
-            <div class="card-name">${esc(item.name)}</div>
-            <div class="card-meta">${esc(cat.n)} · ${item.d}</div>
-          </div>
-        </div>
-        <div class="card-avg ${c}">${fmt(a)}<span class="unit">/天</span></div>
-      </div>
+      <div class="card-top"><div class="card-left"><div class="cat-ico" style="background:${cat.bg}">${cat.e}</div><div class="card-info"><div class="card-name">${esc(item.name)}</div><div class="card-meta">${esc(cat.n)} · ${item.d}</div></div></div><div class="card-avg ${c}">${fmt(a)}<span class="unit">/天</span></div></div>
       ${prog}
-      <div class="card-stats">
-        <div class="stat"><span class="stat-lbl">本月</span><span class="stat-val">${fmt(a*30)}</span></div>
-        <div class="stat"><span class="stat-lbl">已用</span><span class="stat-val">${dur}</span></div>
-        <div class="stat"><span class="stat-lbl">购入价</span><span class="stat-val">${fmt(item.price)}</span></div>
-      </div>
+      <div class="card-stats"><div class="stat"><span class="stat-lbl">本月</span><span class="stat-val">${fmt(a*30)}</span></div><div class="stat"><span class="stat-lbl">已用</span><span class="stat-val">${dur}</span></div><div class="stat"><span class="stat-lbl">购入价</span><span class="stat-val">${fmt(item.price)}</span></div></div>
     </div></div>`;
   }).join('');
   el.querySelectorAll('.card').forEach(el=>el.addEventListener('click',()=>openDet(el.dataset.id)));
 }
+function render(){renderDash();renderList();}
 
-function render() { renderDash(); renderList(); }
+/* ── 渲染 广场 ── */
+function renderFeed(posts){
+  const el=document.getElementById('feedList');
+  document.getElementById('feedLbl').textContent=`共 ${posts.length} 条`;
+  if(!posts.length){
+    el.innerHTML=`<div class="empty"><span class="ico">🌐</span><h3>广场还没有分享</h3><p>点击右下角按钮<br>率先分享你的物品！</p></div>`;
+    return;
+  }
+  const me=myId();
+  el.innerHTML=posts.map(p=>{
+    const a=p.price/daysUsed(p.d),c=cls(a),cat=catOf(p.cat),days=daysUsed(p.d),dur=fmtDur(days);
+    const color=avatarColor(p.nickname||'?');
+    const isMe=p.ownerId===me;
+    const delBtn=isMe?`<button class="feed-del" data-fid="${esc(p.id)}" title="删除"><i class="ti ti-x"></i></button>`:'';
+    const noteHtml=p.note?`<div class="feed-note">${esc(p.note)}</div>`:'';
+    return `<div class="feed-card ${c}"><div class="feed-card-body">
+      <div class="feed-row1">
+        <div class="feed-user"><div class="avatar" style="background:${color}">${esc((p.nickname||'?')[0])}</div><span class="feed-nickname">${esc(p.nickname||'匿名')}</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="feed-time">${timeAgo(p.ts)}</span>${delBtn}</div>
+      </div>
+      <div class="feed-row2">
+        <div class="feed-name">${cat.e} ${esc(p.name)}</div>
+        <div class="feed-avg ${c}">${fmt(a)}<span class="unit">/天</span></div>
+      </div>
+      <div class="feed-row3">
+        <span>${esc(cat.n)}</span><span>已用 ${dur}</span><span>购入 ${fmt(p.price)}</span>
+      </div>
+      ${noteHtml}
+    </div></div>`;
+  }).join('');
+  el.querySelectorAll('.feed-del').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.stopPropagation();
+    if(!confirm('删除这条分享吗？'))return;
+    try{await db.collection('shared').doc(btn.dataset.fid).delete();toast('已删除');}
+    catch(err){toast('删除失败');}
+  }));
+}
 
-/* ── Sheet 控制 ── */
-function openSheet(id) {
+function renderFeedSetup(){
+  document.getElementById('feedList').innerHTML=`
+  <div class="setup-hint">
+    <span class="ico">⚙️</span>
+    <h3>需要配置 Firebase 才能使用广场</h3>
+    <p>广场功能需要云端存储，请按以下步骤完成配置（约 10 分钟）。「我的」功能无需配置，可正常使用。</p>
+    <ol class="setup-steps">
+      <li>打开 <b>firebase.google.com</b> → 创建项目（关闭 Analytics）</li>
+      <li>左侧 → <b>Firestore Database</b> → 创建数据库 → 生产模式</li>
+      <li>项目设置（齿轮）→ 添加 Web 应用 → 复制 <b>firebaseConfig</b></li>
+      <li>在 GitHub 编辑 <b>index.html</b>，将 <code>YOUR_...</code> 替换为真实值后提交</li>
+      <li>Firestore → 规则，替换为：</li>
+    </ol>
+    <div class="setup-code">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /shared/{docId} {
+      allow read: if true;
+      allow create: if true;
+      allow delete: if true;
+    }
+  }
+}</div>
+  </div>`;
+  document.getElementById('feedLbl').textContent='广场（未配置）';
+}
+
+/* ── 订阅广场 ── */
+function subscribeToFeed(){
+  if(!IS_SET||!db){renderFeedSetup();return;}
+  if(unsubFeed)unsubFeed();
+  unsubFeed=db.collection('shared').orderBy('ts','desc').limit(100)
+    .onSnapshot(snap=>{
+      const posts=snap.docs.map(d=>({...d.data(),id:d.id}));
+      renderFeed(posts);
+    },()=>renderFeedSetup());
+}
+
+/* ── Tab 切换 ── */
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('tabMine').classList.toggle('on',tab==='mine');
+  document.getElementById('tabFeed').classList.toggle('on',tab==='feed');
+  document.getElementById('navMine').classList.toggle('on',tab==='mine');
+  document.getElementById('navFeed').classList.toggle('on',tab==='feed');
+  if(tab==='mine'){
+    document.getElementById('hdrTitle').textContent='日均费用';
+    document.getElementById('hdrSub').textContent=headerDate();
+    document.getElementById('hdrRight').innerHTML=`<button class="icon-btn" id="btnInfo"><i class="ti ti-info-circle"></i></button><button class="icon-btn filled" id="btnAdd"><i class="ti ti-plus"></i></button>`;
+    document.getElementById('fab').className='fab';
+    document.getElementById('fab').innerHTML='<i class="ti ti-plus"></i>';
+    bindHdrBtns();
+  } else {
+    document.getElementById('hdrTitle').textContent='共享广场';
+    document.getElementById('hdrSub').textContent='所有人的日均数据';
+    document.getElementById('hdrRight').innerHTML=`<button class="icon-btn" id="btnInfo"><i class="ti ti-info-circle"></i></button>`;
+    document.getElementById('fab').className='fab community';
+    document.getElementById('fab').innerHTML='<i class="ti ti-send"></i>';
+    bindHdrBtns();
+  }
+}
+function bindHdrBtns(){
+  document.getElementById('btnInfo')?.addEventListener('click',()=>openSheet('sheetInfo'));
+  document.getElementById('btnAdd')?.addEventListener('click',openAdd);
+}
+function headerDate(){const d=new Date(),w=['日','一','二','三','四','五','六'];return`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 周${w[d.getDay()]}`;}
+
+/* ── Sheet ── */
+function openSheet(id){
   closeAll();
   document.getElementById(id).classList.add('on');
   document.getElementById('overlay').classList.add('on');
   document.body.classList.add('locked');
 }
-function closeAll() {
+function closeAll(){
   document.querySelectorAll('.sheet.on').forEach(s=>s.classList.remove('on'));
   document.getElementById('overlay').classList.remove('on');
   document.body.classList.remove('locked');
 }
 
 /* ── 品类格 ── */
-function buildCatGrid() {
-  const g = document.getElementById('catGrid');
-  g.innerHTML = CATS.map(c=>`<button type="button" class="cat-opt${c.k===selCat?' sel':''}" data-k="${c.k}"><span class="emo">${c.e}</span><span class="txt">${c.n}</span></button>`).join('');
+function buildCatGrid(gridId,selKey,onSel){
+  const g=document.getElementById(gridId);
+  g.innerHTML=CATS.map(c=>`<button type="button" class="cat-opt${c.k===selKey?' sel':''}" data-k="${c.k}"><span class="emo">${c.e}</span><span class="txt">${c.n}</span></button>`).join('');
   g.querySelectorAll('.cat-opt').forEach(b=>b.addEventListener('click',()=>{
-    selCat=b.dataset.k;
+    onSel(b.dataset.k);
     g.querySelectorAll('.cat-opt').forEach(x=>x.classList.remove('sel'));
     b.classList.add('sel');
   }));
 }
 
-/* ── 表单 ── */
-function resetForm() {
-  document.getElementById('theForm').reset();
-  document.querySelectorAll('.f-inp.err').forEach(e=>e.classList.remove('err'));
-  document.querySelectorAll('.f-err.on').forEach(e=>e.classList.remove('on'));
-}
+/* ── 个人物品表单 ── */
+function resetForm(){document.getElementById('theForm').reset();document.querySelectorAll('#sheetForm .f-inp.err').forEach(e=>e.classList.remove('err'));document.querySelectorAll('#sheetForm .f-err.on').forEach(e=>e.classList.remove('on'));}
 function errShow(fi,ei){document.getElementById(fi).classList.add('err');document.getElementById(ei).classList.add('on');}
 
-function openAdd() {
-  editId=null; selCat='other';
+function openAdd(){
+  editId=null;selCat='other';
   document.getElementById('formTitle').textContent='添加物品';
   document.getElementById('fId').value='';
   document.getElementById('btnDel').style.display='none';
   resetForm();
   document.getElementById('fDate').value=todayStr();
   document.getElementById('fDate').max=todayStr();
-  buildCatGrid(); openSheet('sheetForm');
+  buildCatGrid('catGrid','other',k=>{selCat=k;});
+  openSheet('sheetForm');
 }
-function openEdit(id) {
-  const item=items.find(i=>i.id===id); if(!item) return;
-  editId=id; selCat=item.cat;
+function openEdit(id){
+  const item=items.find(i=>i.id===id);if(!item)return;
+  editId=id;selCat=item.cat;
   document.getElementById('formTitle').textContent='编辑物品';
   document.getElementById('fId').value=id;
   document.getElementById('fName').value=item.name;
@@ -668,55 +605,45 @@ function openEdit(id) {
   document.getElementById('fYears').value=item.yr||'';
   document.getElementById('fNote').value=item.note||'';
   document.getElementById('btnDel').style.display='';
-  resetForm(); buildCatGrid(); openSheet('sheetForm');
+  resetForm();buildCatGrid('catGrid',item.cat,k=>{selCat=k;});
+  openSheet('sheetForm');
 }
 
-document.getElementById('theForm').addEventListener('submit', async e => {
+document.getElementById('theForm').addEventListener('submit',e=>{
   e.preventDefault();
-  const name  = document.getElementById('fName').value.trim();
-  const price = parseFloat(document.getElementById('fPrice').value);
-  const date  = document.getElementById('fDate').value;
-  const yr    = parseFloat(document.getElementById('fYears').value)||null;
-  const note  = document.getElementById('fNote').value.trim();
+  const name=document.getElementById('fName').value.trim();
+  const price=parseFloat(document.getElementById('fPrice').value);
+  const date=document.getElementById('fDate').value;
+  const yr=parseFloat(document.getElementById('fYears').value)||null;
+  const note=document.getElementById('fNote').value.trim();
   let ok=true;
-  if(!name)              {errShow('fName','eName');  ok=false;}
-  if(!price||price<=0)   {errShow('fPrice','ePrice');ok=false;}
+  if(!name){errShow('fName','eName');ok=false;}
+  if(!price||price<=0){errShow('fPrice','ePrice');ok=false;}
   if(!date||date>todayStr()){errShow('fDate','eDate');ok=false;}
-  if(!ok) return;
-
-  const btn = document.getElementById('btnSave');
-  btn.disabled=true; btn.textContent='保存中…';
-  try {
-    const data = {name, cat:selCat, price, d:date, yr, note};
-    if (editId) { await dbUpdate(editId, data); toast('已更新'); }
-    else        { await dbAdd(data);            toast('已添加'); }
-    closeAll();
-  } catch(err) { toast('保存失败：'+err.code); }
-  finally { btn.disabled=false; btn.textContent='保存'; }
+  if(!ok)return;
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if(editId){const i=items.findIndex(x=>x.id===editId);if(i!==-1)items[i]={...items[i],name,cat:selCat,price,d:date,yr,note};toast('已更新');}
+  else{items.push({id:uid(),name,cat:selCat,price,d:date,yr,note});toast('已添加');}
+  saveItems();render();closeAll();
 });
 
-document.getElementById('btnDel').addEventListener('click', async () => {
-  if(!editId) return;
-  const item=items.find(i=>i.id===editId); if(!item) return;
-  if(!confirm(`确定删除「${item.name}」吗？`)) return;
-  try { await dbDelete(editId); closeAll(); toast('已删除'); }
-  catch(err) { toast('删除失败：'+err.code); }
+document.getElementById('btnDel').addEventListener('click',()=>{
+  if(!editId)return;
+  const item=items.find(i=>i.id===editId);if(!item)return;
+  if(!confirm(`确定删除「${item.name}」吗？`))return;
+  items=items.filter(i=>i.id!==editId);saveItems();render();closeAll();toast('已删除');
 });
 
 /* ── 详情 ── */
-function openDet(id) {
-  const item=items.find(i=>i.id===id); if(!item) return;
+function openDet(id){
+  const item=items.find(i=>i.id===id);if(!item)return;
   const a=avg(item),c=cls(a),cat=catOf(item.cat),days=daysUsed(item.d);
   document.getElementById('detTitle').textContent=cat.e+' '+item.name;
   let prog='';
   if(item.yr>0){const pct=Math.min(days/(item.yr*365)*100,100).toFixed(1);prog=`<div class="det-prog"><div class="det-prog-hdr"><span>使用进度</span><span>${fmtDur(days)} / ${item.yr}年 (${pct}%)</span></div><div class="prog-track"><div class="prog-fill ${c}" style="width:${pct}%"></div></div></div>`;}
   const noteHtml=item.note?`<div class="det-note"><div class="det-note-lbl">备注</div><div class="det-note-txt">${esc(item.note)}</div></div>`:'';
   document.getElementById('detBody').innerHTML=`
-    <div class="det-hero">
-      <div class="det-hero-lbl">日均费用</div>
-      <div class="det-hero-val ${c} num">${fmt(a)}</div>
-      <div class="det-hero-sub num">本月约 ${fmt(a*30)} · 本年约 ${fmt(a*365)}</div>
-    </div>
+    <div class="det-hero"><div class="det-hero-lbl">日均费用</div><div class="det-hero-val ${c} num">${fmt(a)}</div><div class="det-hero-sub num">本月约 ${fmt(a*30)} · 本年约 ${fmt(a*365)}</div></div>
     <div class="det-grid">
       <div class="det-cell"><div class="det-cell-lbl">购入价格</div><div class="det-cell-val num">${fmtF(item.price)}</div></div>
       <div class="det-cell"><div class="det-cell-lbl">已使用</div><div class="det-cell-val num">${fmtDur(days)}</div></div>
@@ -724,123 +651,79 @@ function openDet(id) {
       <div class="det-cell"><div class="det-cell-lbl">本年费用</div><div class="det-cell-val num">${fmt(a*365)}</div></div>
       <div class="det-cell"><div class="det-cell-lbl">购买日期</div><div class="det-cell-val" style="font-size:.88rem">${item.d}</div></div>
       <div class="det-cell"><div class="det-cell-lbl">品类</div><div class="det-cell-val" style="font-size:.88rem">${cat.e} ${esc(cat.n)}</div></div>
-    </div>
-    ${prog}${noteHtml}
-    <button class="det-edit-btn" id="detEditBtn"><i class="ti ti-pencil"></i> 编辑物品</button>`;
+    </div>${prog}${noteHtml}
+    <button class="det-edit-btn" id="detEditBtn"><i class="ti ti-pencil"></i> 编辑物品</button>
+    <button class="det-share-btn" id="detShareBtn"><i class="ti ti-send" style="font-size:.85rem"></i> 分享到广场</button>`;
   document.getElementById('detEditBtn').addEventListener('click',()=>{closeAll();setTimeout(()=>openEdit(id),40);});
+  document.getElementById('detShareBtn').addEventListener('click',()=>{closeAll();setTimeout(()=>openSharePrefilled(item),40);});
   openSheet('sheetDet');
 }
 
-/* ── 排序 ── */
-document.getElementById('btnSort').addEventListener('click',()=>{
-  sortIdx=(sortIdx+1)%SORTS.length;
-  document.getElementById('sortTxt').textContent=SORTS[sortIdx].lbl;
-  renderList();
+/* ── 分享到广场 ── */
+function resetShareForm(){document.getElementById('shareForm').reset();document.querySelectorAll('#sheetShare .f-inp.err').forEach(e=>e.classList.remove('err'));document.querySelectorAll('#sheetShare .f-err.on').forEach(e=>e.classList.remove('on'));}
+
+function openSharePrefilled(item){
+  sSelCat=item?item.cat:'other';
+  resetShareForm();
+  document.getElementById('sNickname').value=savedNickname();
+  if(item){
+    document.getElementById('sName').value=item.name;
+    document.getElementById('sPrice').value=item.price;
+    document.getElementById('sDate').value=item.d;
+    document.getElementById('sYears').value=item.yr||'';
+  }
+  document.getElementById('sDate').max=todayStr();
+  buildCatGrid('sCatGrid',sSelCat,k=>{sSelCat=k;});
+  openSheet('sheetShare');
+}
+
+document.getElementById('shareForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!IS_SET||!db){toast('请先配置 Firebase');return;}
+  const nick=document.getElementById('sNickname').value.trim();
+  const name=document.getElementById('sName').value.trim();
+  const price=parseFloat(document.getElementById('sPrice').value);
+  const date=document.getElementById('sDate').value;
+  const yr=parseFloat(document.getElementById('sYears').value)||null;
+  const note=document.getElementById('sNote').value.trim();
+  let ok=true;
+  if(!nick){document.getElementById('sNickname').classList.add('err');document.getElementById('eNickname').classList.add('on');ok=false;}
+  if(!name){document.getElementById('sName').classList.add('err');document.getElementById('eSName').classList.add('on');ok=false;}
+  if(!price||price<=0){document.getElementById('sPrice').classList.add('err');document.getElementById('eSPrice').classList.add('on');ok=false;}
+  if(!date||date>todayStr()){document.getElementById('sDate').classList.add('err');document.getElementById('eSDate').classList.add('on');ok=false;}
+  if(!ok)return;
+  saveNickname(nick);
+  const btn=document.getElementById('btnShareSubmit');
+  btn.disabled=true;btn.textContent='发布中…';
+  try{
+    await db.collection('shared').add({nickname:nick,name,cat:sSelCat,price,d:date,yr,note,ownerId:myId(),ts:firebase.firestore.FieldValue.serverTimestamp()});
+    closeAll();toast('已发布到广场！');
+    switchTab('feed');
+  }catch(err){toast('发布失败：'+err.code);}
+  finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-send" style="font-size:.9rem"></i> 发布到广场';}
 });
+
+/* ── 排序 ── */
+document.getElementById('btnSort').addEventListener('click',()=>{sortIdx=(sortIdx+1)%SORTS.length;document.getElementById('sortTxt').textContent=SORTS[sortIdx].lbl;renderList();});
 
 /* ── Toast ── */
 let _tt;
-function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('on');
-  clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('on'),2200);
-}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),2200);}
 
-/* ── 事件绑定 ── */
-document.getElementById('fab').addEventListener('click',openAdd);
-document.getElementById('btnHdrAdd').addEventListener('click',openAdd);
-document.getElementById('btnInfo').addEventListener('click',()=>openSheet('sheetInfo'));
+/* ── 事件 ── */
+document.getElementById('fab').addEventListener('click',()=>{activeTab==='mine'?openAdd():openSharePrefilled(null);});
 document.getElementById('overlay').addEventListener('click',closeAll);
 document.getElementById('formClose').addEventListener('click',closeAll);
 document.getElementById('detClose').addEventListener('click',closeAll);
+document.getElementById('shareClose').addEventListener('click',closeAll);
 document.getElementById('infoClose').addEventListener('click',closeAll);
-document.getElementById('userClose').addEventListener('click',closeAll);
-document.getElementById('btnUser').addEventListener('click',()=>{
-  document.getElementById('userEmailFull').textContent=auth.currentUser?.email||'';
-  openSheet('sheetUser');
-});
-document.getElementById('btnLogout').addEventListener('click',async()=>{
-  if(!confirm('确定退出登录吗？'))return;
-  await auth.signOut(); closeAll();
-});
+document.getElementById('navMine').addEventListener('click',()=>switchTab('mine'));
+document.getElementById('navFeed').addEventListener('click',()=>{switchTab('feed');subscribeToFeed();});
 
-/* ── 日期 ── */
-function setHeaderDate(){
-  const d=new Date(),w=['日','一','二','三','四','五','六'];
-  document.getElementById('hdrDate').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 周${w[d.getDay()]}`;
-}
-
-/* ── AUTH UI ── */
-let isLogin=true;
-function setAuthMode(login){
-  isLogin=login;
-  document.getElementById('tabLogin').classList.toggle('on',login);
-  document.getElementById('tabReg').classList.toggle('on',!login);
-  document.getElementById('aPwdCWrap').style.display=login?'none':'';
-  document.getElementById('aSubmit').textContent=login?'登录':'注册';
-  document.getElementById('aMsg').textContent='';
-  document.getElementById('aMsg').className='auth-msg';
-  document.getElementById('aPwd').autocomplete=login?'current-password':'new-password';
-}
-document.getElementById('tabLogin').addEventListener('click',()=>setAuthMode(true));
-document.getElementById('tabReg').addEventListener('click',()=>setAuthMode(false));
-
-document.getElementById('aSubmit').addEventListener('click',async()=>{
-  const email=document.getElementById('aEmail').value.trim();
-  const pwd  =document.getElementById('aPwd').value;
-  const pwdC =document.getElementById('aPwdC').value;
-  const btn  =document.getElementById('aSubmit');
-  const msg  =document.getElementById('aMsg');
-  msg.textContent=''; msg.className='auth-msg';
-  if(!email){msg.textContent='请输入邮箱';return;}
-  if(pwd.length<6){msg.textContent='密码至少 6 位';return;}
-  if(!isLogin&&pwd!==pwdC){msg.textContent='两次密码不一致';return;}
-  btn.disabled=true; btn.textContent=isLogin?'登录中…':'注册中…';
-  try {
-    if(isLogin) await auth.signInWithEmailAndPassword(email,pwd);
-    else        await auth.createUserWithEmailAndPassword(email,pwd);
-  } catch(err) {
-    const MAP={
-      'auth/user-not-found':'账号不存在',
-      'auth/wrong-password':'密码错误',
-      'auth/email-already-in-use':'该邮箱已注册',
-      'auth/invalid-email':'邮箱格式不正确',
-      'auth/weak-password':'密码强度不够',
-      'auth/too-many-requests':'尝试次数过多，稍后再试',
-      'auth/network-request-failed':'网络错误，请检查连接',
-    };
-    msg.textContent = MAP[err.code]||('错误：'+err.code);
-  } finally { btn.disabled=false; btn.textContent=isLogin?'登录':'注册'; }
-});
-
-document.getElementById('aReset').addEventListener('click',async()=>{
-  const email=document.getElementById('aEmail').value.trim();
-  const msg=document.getElementById('aMsg');
-  if(!email){msg.className='auth-msg';msg.textContent='请先输入邮箱';return;}
-  try {
-    await auth.sendPasswordResetEmail(email);
-    msg.className='auth-msg ok'; msg.textContent='重置邮件已发送，请查收';
-  } catch(err) { msg.className='auth-msg'; msg.textContent='发送失败：'+err.code; }
-});
-
-/* ── Auth 状态监听 ── */
-auth.onAuthStateChanged(user => {
-  document.getElementById('loading').style.display='none';
-  if (user) {
-    uid=user.uid;
-    document.getElementById('userEmailTxt').textContent=user.email;
-    document.getElementById('authWrap').style.display='none';
-    document.getElementById('app').style.display='';
-    setHeaderDate();
-    listenItems();
-  } else {
-    uid=null; items=[];
-    if(unsubItems){unsubItems();unsubItems=null;}
-    document.getElementById('app').style.display='none';
-    document.getElementById('authWrap').style.display='flex';
-    setAuthMode(true);
-  }
-});
+/* ── 启动 ── */
+loadItems();
+switchTab('mine');
+render();
 </script>
 </body>
 </html>
