@@ -1,105 +1,792 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>日均费用追踪器</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>日均费用</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+:root {
+  --green:   #10b981;
+  --yellow:  #f59e0b;
+  --red:     #ef4444;
+  --bg:      #f3f4f6;
+  --surface: #ffffff;
+  --border:  #e5e7eb;
+  --t1:      #111827;
+  --t2:      #6b7280;
+  --t3:      #9ca3af;
+  --r:       14px;
+  --shadow:  0 1px 4px rgba(0,0,0,.07), 0 2px 8px rgba(0,0,0,.05);
+  --safe-t:  env(safe-area-inset-top,    0px);
+  --safe-b:  env(safe-area-inset-bottom, 0px);
+  --safe-l:  env(safe-area-inset-left,   0px);
+  --safe-r:  env(safe-area-inset-right,  0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 16px; }
+body {
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+body.locked { overflow: hidden; }
+.num { font-family: 'Archivo', sans-serif; font-variant-numeric: tabular-nums; }
+
+/* ── HEADER ─────────────────────────────── */
+.hdr {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-t) + 10px) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-left h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; }
+.hdr-left .sub { font-size: .7rem; color: var(--t3); margin-top: 1px; }
+.hdr-right { display: flex; gap: 8px; }
+.icon-btn {
+  width: 34px; height: 34px; border: none; background: var(--bg);
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--t2); font-size: 1.15rem;
+  transition: background .12s;
+}
+.icon-btn:active { background: #dde1e7; }
+.icon-btn.filled { background: var(--t1); color: #fff; }
+.icon-btn.filled:active { background: #374151; }
+
+/* ── MAIN ────────────────────────────────── */
+.main { padding: 14px 16px calc(88px + var(--safe-b)); }
+
+/* ── DASHBOARD ───────────────────────────── */
+.dash { margin-bottom: 14px; }
+.dash-big {
+  background: linear-gradient(135deg,#4f46e5 0%,#0ea5e9 100%);
+  border-radius: var(--r); padding: 18px 20px;
+  color: #fff; margin-bottom: 10px; position: relative; overflow: hidden;
+}
+.dash-big::after {
+  content:''; position: absolute; top:-30px; right:-20px;
+  width:110px; height:110px; background:rgba(255,255,255,.09); border-radius:50%;
+}
+.dash-big-lbl { font-size:.72rem; opacity:.85; margin-bottom:6px; letter-spacing:.02em; }
+.dash-big-val { font-family:'Archivo',sans-serif; font-size:2.6rem; font-weight:700; line-height:1; letter-spacing:-.04em; }
+.dash-big-sub { font-size:.72rem; opacity:.72; margin-top:6px; }
+.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dash-sm { background:var(--surface); border-radius:var(--r); padding:14px; box-shadow:var(--shadow); }
+.dash-sm-lbl { font-size:.7rem; color:var(--t3); margin-bottom:5px; }
+.dash-sm-val { font-family:'Archivo',sans-serif; font-size:1.55rem; font-weight:700; }
+.dash-sm-sub { font-size:.7rem; color:var(--t2); margin-top:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+/* ── SORT BAR ────────────────────────────── */
+.sort-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.sort-bar-lbl { font-size:.82rem; color:var(--t2); font-weight:500; }
+.sort-btn {
+  display:flex; align-items:center; gap:4px;
+  padding:5px 11px; border:1px solid var(--border); border-radius:8px;
+  background:var(--surface); font-size:.78rem; color:var(--t2);
+  cursor:pointer; font-family:inherit; transition:background .12s;
+}
+.sort-btn:active { background:var(--bg); }
+
+/* ── ITEM CARDS ──────────────────────────── */
+.list { display:flex; flex-direction:column; gap:10px; }
+.card {
+  background:var(--surface); border-radius:var(--r); box-shadow:var(--shadow);
+  overflow:hidden; cursor:pointer;
+  border-left:4px solid transparent;
+  transition: transform .1s;
+}
+.card:active { transform:scale(.99); }
+.card.green  { border-left-color:var(--green); }
+.card.yellow { border-left-color:var(--yellow); }
+.card.red    { border-left-color:var(--red); }
+.card-body { padding:13px 14px; }
+.card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:9px; }
+.card-left { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.cat-ico {
+  width:38px; height:38px; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.35rem; flex-shrink:0;
+}
+.card-info { flex:1; min-width:0; }
+.card-name { font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card-meta { font-size:.72rem; color:var(--t3); margin-top:2px; }
+.card-avg {
+  font-family:'Archivo',sans-serif; font-weight:700; font-size:1rem;
+  white-space:nowrap; margin-left:8px; flex-shrink:0;
+  display:flex; align-items:baseline; gap:2px;
+}
+.card-avg .unit { font-size:.65rem; font-weight:400; color:inherit; opacity:.8; }
+.card-avg.green  { color:var(--green); }
+.card-avg.yellow { color:var(--yellow); }
+.card-avg.red    { color:var(--red); }
+/* progress */
+.prog-wrap { margin-bottom:9px; }
+.prog-track { height:5px; background:var(--border); border-radius:99px; overflow:hidden; }
+.prog-fill  { height:100%; border-radius:99px; transition:width .4s ease; }
+.prog-fill.green  { background:var(--green); }
+.prog-fill.yellow { background:var(--yellow); }
+.prog-fill.red    { background:var(--red); }
+.prog-lbl { display:flex; justify-content:space-between; font-size:.66rem; color:var(--t3); margin-top:3px; }
+/* stats row */
+.card-stats {
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  border-top:1px solid var(--border); padding-top:9px; gap:4px;
+}
+.stat { text-align:center; }
+.stat-lbl { display:block; font-size:.65rem; color:var(--t3); margin-bottom:2px; }
+.stat-val  { font-family:'Archivo',sans-serif; font-size:.85rem; font-weight:600; }
+/* empty */
+.empty {
+  text-align:center; padding:56px 20px; color:var(--t3);
+}
+.empty .ico { font-size:2.8rem; display:block; margin-bottom:12px; }
+.empty h3 { font-size:.95rem; color:var(--t2); margin-bottom:7px; }
+.empty p  { font-size:.82rem; line-height:1.65; }
+
+/* ── FAB ─────────────────────────────────── */
+.fab {
+  position:fixed; right:16px;
+  bottom: calc(22px + var(--safe-b));
+  width:54px; height:54px; background:var(--t1); color:#fff;
+  border:none; border-radius:15px; font-size:1.55rem;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.22);
+  z-index:40; transition:transform .13s, box-shadow .13s;
+}
+@media(min-width:480px){
+  .fab{ right:calc(50% - 224px); }
+}
+.fab:active{ transform:scale(.94); box-shadow:0 2px 8px rgba(0,0,0,.18); }
+
+/* ── OVERLAY ─────────────────────────────── */
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0);
+  z-index:90; pointer-events:none; transition:background .22s;
+}
+.overlay.on { background:rgba(0,0,0,.48); pointer-events:all; }
+
+/* ── SHEET ───────────────────────────────── */
+.sheet {
+  position:fixed; bottom:0; left:50%;
+  transform:translateX(-50%) translateY(100%);
+  width:100%; max-width:480px; background:var(--surface);
+  border-radius:20px 20px 0 0; z-index:91;
+  transition:transform .3s cubic-bezier(.32,.72,0,1);
+  max-height:92dvh; display:flex; flex-direction:column;
+}
+.sheet.on { transform:translateX(-50%) translateY(0); }
+.sheet-pill { width:38px; height:4px; background:var(--border); border-radius:99px; margin:11px auto 0; flex-shrink:0; }
+.sheet-hdr {
+  padding:14px 18px 12px; display:flex; align-items:center;
+  justify-content:space-between; border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.sheet-ttl { font-size:.98rem; font-weight:600; }
+.sheet-close {
+  width:30px; height:30px; border:none; background:var(--bg);
+  border-radius:8px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--t2); font-size:.95rem;
+}
+.sheet-body {
+  overflow-y:auto; flex:1; padding:16px 18px;
+  padding-bottom:calc(16px + var(--safe-b));
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ── FORM ────────────────────────────────── */
+.f-sec { margin-bottom:18px; }
+.f-lbl { font-size:.78rem; font-weight:600; color:var(--t2); margin-bottom:7px; display:block; letter-spacing:.02em; }
+.f-lbl .req { color:var(--red); }
+.f-inp {
+  width:100%; padding:10px 13px; border:1.5px solid var(--border);
+  border-radius:10px; font-size:.93rem; font-family:inherit; color:var(--t1);
+  background:var(--bg); outline:none; transition:border-color .14s;
+}
+.f-inp:focus { border-color:#4f46e5; background:#fff; }
+.f-inp::placeholder { color:var(--t3); }
+.f-inp.err { border-color:var(--red); }
+.f-err { font-size:.72rem; color:var(--red); margin-top:4px; display:none; }
+.f-err.on { display:block; }
+.f-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+/* category grid */
+.cat-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:7px; }
+.cat-opt {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:9px 3px; border:2px solid var(--border); border-radius:10px;
+  cursor:pointer; background:var(--bg); transition:all .13s; font-family:inherit;
+}
+.cat-opt .emo { font-size:1.3rem; line-height:1; }
+.cat-opt .txt { font-size:.58rem; color:var(--t2); text-align:center; line-height:1.2; }
+.cat-opt.sel { border-color:#4f46e5; background:#eef2ff; }
+.cat-opt.sel .txt { color:#4f46e5; }
+/* actions */
+.f-actions { display:flex; gap:9px; margin-top:22px; }
+.btn {
+  flex:1; padding:12px; border:none; border-radius:11px;
+  font-size:.92rem; font-weight:600; cursor:pointer; font-family:inherit;
+  transition: opacity .13s, transform .1s;
+}
+.btn:active { transform:scale(.98); }
+.btn-save { background:var(--t1); color:#fff; }
+.btn-del  { background:#fef2f2; color:var(--red); flex:0 0 auto; padding:12px 14px; }
+
+/* ── DETAIL SHEET ────────────────────────── */
+.det-hero { text-align:center; padding:22px 0 14px; }
+.det-hero-lbl { font-size:.72rem; color:var(--t3); margin-bottom:7px; }
+.det-hero-val {
+  font-family:'Archivo',sans-serif; font-size:3.4rem; font-weight:700;
+  line-height:1; letter-spacing:-.04em;
+}
+.det-hero-val.green  { color:var(--green); }
+.det-hero-val.yellow { color:var(--yellow); }
+.det-hero-val.red    { color:var(--red); }
+.det-hero-sub { font-size:.73rem; color:var(--t3); margin-top:7px; }
+.det-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:14px; }
+.det-cell { background:var(--bg); border-radius:10px; padding:12px 13px; }
+.det-cell-lbl { font-size:.7rem; color:var(--t3); margin-bottom:4px; }
+.det-cell-val { font-family:'Archivo',sans-serif; font-size:1.08rem; font-weight:600; }
+.det-prog { background:var(--bg); border-radius:10px; padding:13px; margin-bottom:14px; }
+.det-prog-hdr { display:flex; justify-content:space-between; font-size:.78rem; color:var(--t2); margin-bottom:9px; }
+.det-note { background:var(--bg); border-radius:10px; padding:13px; margin-bottom:14px; }
+.det-note-lbl { font-size:.7rem; color:var(--t3); margin-bottom:5px; }
+.det-note-txt { font-size:.88rem; color:var(--t2); line-height:1.65; }
+.det-edit-btn {
+  width:100%; padding:13px; background:var(--bg); border:1.5px solid var(--border);
+  border-radius:12px; font-size:.92rem; font-weight:600; cursor:pointer;
+  font-family:inherit; color:var(--t1); display:flex; align-items:center;
+  justify-content:center; gap:6px; transition:background .13s;
+}
+.det-edit-btn:active { background:#e5e7eb; }
+
+/* ── INFO SHEET ──────────────────────────── */
+.info-sec { margin-bottom:22px; }
+.info-sec h3 { font-size:.88rem; font-weight:600; margin-bottom:7px; }
+.info-sec p { font-size:.83rem; line-height:1.7; color:var(--t2); }
+.info-formula {
+  background:var(--bg); border-radius:9px; padding:11px 13px;
+  font-size:.83rem; color:var(--t2); font-family:'Archivo',sans-serif;
+  margin-top:8px; border-left:3px solid #4f46e5; line-height:1.6;
+}
+.badge {
+  display:inline-flex; align-items:center;
+  padding:2px 9px; border-radius:6px;
+  font-size:.75rem; font-weight:600; margin:3px 2px;
+  font-family:'Archivo',sans-serif;
+}
+.badge.green  { background:#d1fae5; color:#065f46; }
+.badge.yellow { background:#fef3c7; color:#92400e; }
+.badge.red    { background:#fee2e2; color:#991b1b; }
+
+/* ── TOAST ───────────────────────────────── */
+.toast {
+  position:fixed; bottom:calc(82px + var(--safe-b)); left:50%;
+  transform:translateX(-50%) translateY(14px);
+  background:#1f2937; color:#fff; padding:9px 20px;
+  border-radius:99px; font-size:.82rem; white-space:nowrap;
+  opacity:0; transition:opacity .18s, transform .18s;
+  pointer-events:none; z-index:200;
+}
+.toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
-  <div class="app">
-    <header class="header">
-      <h1>日均费用追踪器</h1>
-      <p class="subtitle">记录每日支出，掌握消费趋势</p>
-    </header>
 
-    <section class="summary-cards">
-      <div class="card">
-        <div class="card-label">今日支出</div>
-        <div class="card-value" id="todayTotal">¥0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">本月日均</div>
-        <div class="card-value" id="monthlyAvg">¥0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">本月总计</div>
-        <div class="card-value" id="monthTotal">¥0.00</div>
-      </div>
-      <div class="card">
-        <div class="card-label">记录天数</div>
-        <div class="card-value" id="recordDays">0 天</div>
-      </div>
-    </section>
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-left">
+    <h1>日均费用</h1>
+    <div class="sub" id="hdrDate"></div>
+  </div>
+  <div class="hdr-right">
+    <button class="icon-btn" id="btnInfo"  aria-label="说明"><i class="ti ti-info-circle"></i></button>
+    <button class="icon-btn filled" id="btnHdrAdd" aria-label="添加"><i class="ti ti-plus"></i></button>
+  </div>
+</header>
 
-    <section class="add-expense">
-      <h2>添加支出</h2>
-      <form id="expenseForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="expDate">日期</label>
-            <input type="date" id="expDate" required />
-          </div>
-          <div class="form-group">
-            <label for="expAmount">金额（元）</label>
-            <input type="number" id="expAmount" placeholder="0.00" step="0.01" min="0.01" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="expCategory">分类</label>
-            <select id="expCategory">
-              <option value="餐饮">🍜 餐饮</option>
-              <option value="交通">🚇 交通</option>
-              <option value="购物">🛍️ 购物</option>
-              <option value="娱乐">🎮 娱乐</option>
-              <option value="医疗">💊 医疗</option>
-              <option value="居家">🏠 居家</option>
-              <option value="教育">📚 教育</option>
-              <option value="其他">📦 其他</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="expNote">备注</label>
-            <input type="text" id="expNote" placeholder="可选" maxlength="50" />
-          </div>
-        </div>
-        <button type="submit" class="btn-add">添加记录</button>
-      </form>
-    </section>
-
-    <section class="expense-list">
-      <div class="list-header">
-        <h2>支出明细</h2>
-        <div class="filter-bar">
-          <select id="filterMonth">
-            <option value="">全部月份</option>
-          </select>
-          <select id="filterCategory">
-            <option value="">全部分类</option>
-            <option value="餐饮">餐饮</option>
-            <option value="交通">交通</option>
-            <option value="购物">购物</option>
-            <option value="娱乐">娱乐</option>
-            <option value="医疗">医疗</option>
-            <option value="居家">居家</option>
-            <option value="教育">教育</option>
-            <option value="其他">其他</option>
-          </select>
-          <button class="btn-clear" id="clearAllBtn">清空全部</button>
-        </div>
+<!-- MAIN -->
+<main class="main">
+  <section class="dash">
+    <div class="dash-big">
+      <div class="dash-big-lbl">今日总日均支出</div>
+      <div class="dash-big-val num" id="dTotal">¥0</div>
+      <div class="dash-big-sub num" id="dTotalSub">本月约 ¥0 · 本年约 ¥0</div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-sm">
+        <div class="dash-sm-lbl">追踪物品数</div>
+        <div class="dash-sm-val num" id="dCount">0</div>
+        <div class="dash-sm-sub" id="dCountSub">件物品</div>
       </div>
-      <div id="expenseItems" class="expense-items">
-        <div class="empty-hint">暂无支出记录，添加第一条吧！</div>
+      <div class="dash-sm">
+        <div class="dash-sm-lbl">日均最贵</div>
+        <div class="dash-sm-val num" id="dTopVal">—</div>
+        <div class="dash-sm-sub" id="dTopName">暂无记录</div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="category-breakdown">
-      <h2>分类汇总（本月）</h2>
-      <div id="categoryBreakdown" class="breakdown-list"></div>
-    </section>
+  <div class="sort-bar">
+    <span class="sort-bar-lbl" id="listLbl">共 0 件</span>
+    <button class="sort-btn" id="btnSort">
+      <i class="ti ti-arrows-sort" style="font-size:.88rem"></i>
+      <span id="sortTxt">日均 ↓</span>
+    </button>
   </div>
 
-  <script src="app.js"></script>
+  <div class="list" id="itemList"></div>
+</main>
+
+<!-- FAB -->
+<button class="fab" id="fab" aria-label="添加物品"><i class="ti ti-plus"></i></button>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay"></div>
+
+<!-- FORM SHEET -->
+<div class="sheet" id="sheetForm">
+  <div class="sheet-pill"></div>
+  <div class="sheet-hdr">
+    <span class="sheet-ttl" id="formTitle">添加物品</span>
+    <button class="sheet-close" id="formClose"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="sheet-body">
+    <form id="theForm" novalidate>
+      <div class="f-sec">
+        <label class="f-lbl">品类</label>
+        <div class="cat-grid" id="catGrid"></div>
+      </div>
+      <div class="f-sec">
+        <label class="f-lbl" for="fName">物品名称 <span class="req">*</span></label>
+        <input type="text" id="fName" class="f-inp" placeholder="例：iPhone 15 Pro" maxlength="30">
+        <div class="f-err" id="eName">请输入物品名称</div>
+      </div>
+      <div class="f-sec">
+        <div class="f-row">
+          <div>
+            <label class="f-lbl" for="fPrice">购入价格（元）<span class="req">*</span></label>
+            <input type="number" id="fPrice" class="f-inp" placeholder="0.00" min="0.01" step="0.01">
+            <div class="f-err" id="ePrice">请输入有效金额</div>
+          </div>
+          <div>
+            <label class="f-lbl" for="fDate">购买日期 <span class="req">*</span></label>
+            <input type="date" id="fDate" class="f-inp">
+            <div class="f-err" id="eDate">不能选未来日期</div>
+          </div>
+        </div>
+      </div>
+      <div class="f-sec">
+        <div class="f-row">
+          <div>
+            <label class="f-lbl" for="fYears">预计使用年限</label>
+            <input type="number" id="fYears" class="f-inp" placeholder="例：3" min="0.1" max="30" step="0.1">
+          </div>
+          <div>
+            <label class="f-lbl" for="fNote">备注</label>
+            <input type="text" id="fNote" class="f-inp" placeholder="可选" maxlength="50">
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="fId">
+      <div class="f-actions">
+        <button type="button" class="btn btn-del" id="btnDel" style="display:none">
+          <i class="ti ti-trash"></i>
+        </button>
+        <button type="submit" class="btn btn-save">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DETAIL SHEET -->
+<div class="sheet" id="sheetDet">
+  <div class="sheet-pill"></div>
+  <div class="sheet-hdr">
+    <span class="sheet-ttl" id="detTitle">详情</span>
+    <button class="sheet-close" id="detClose"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="sheet-body" id="detBody"></div>
+</div>
+
+<!-- INFO SHEET -->
+<div class="sheet" id="sheetInfo">
+  <div class="sheet-pill"></div>
+  <div class="sheet-hdr">
+    <span class="sheet-ttl">使用说明</span>
+    <button class="sheet-close" id="infoClose"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="sheet-body">
+    <div class="info-sec">
+      <h3>什么是日均费用？</h3>
+      <p>日均费用衡量一件物品每天"消耗"了多少钱。用得越久，日均越低。灵感来自有数 App 的资产摊销——把一次性大额消费分摊到每一天，帮你判断东西值不值、该不该换。</p>
+    </div>
+    <div class="info-sec">
+      <h3>计算公式</h3>
+      <div class="info-formula">
+        日均 = 购入价格 ÷ max(今天 − 购买日期, 1天)<br>
+        本月 = 日均 × 30　本年 = 日均 × 365
+      </div>
+    </div>
+    <div class="info-sec">
+      <h3>颜色含义</h3>
+      <p>
+        <span class="badge green">＜ ¥10 / 天</span> 很划算，继续用下去<br>
+        <span class="badge yellow">¥10 ~ 50 / 天</span> 适中，正常消费水平<br>
+        <span class="badge red">＞ ¥50 / 天</span> 偏贵，考虑是否值得
+      </p>
+    </div>
+    <div class="info-sec">
+      <h3>使用进度条</h3>
+      <p>填写「预计使用年限」后，卡片会显示已使用时长与预计年限的比值。超出预计时间则进度满格——说明这件东西很划算！</p>
+    </div>
+    <div class="info-sec">
+      <h3>数据存储</h3>
+      <p>所有数据只保存在你的浏览器本地（localStorage），不会上传任何服务器。清除浏览器数据会丢失记录，请注意。</p>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ── 常量 ───────────────────────────────── */
+const SK = 'cost-items';
+
+const CATS = [
+  { k:'phone',     e:'📱', n:'手机/平板', c:'#6366f1', bg:'#eef2ff' },
+  { k:'laptop',    e:'💻', n:'电脑',      c:'#3b82f6', bg:'#eff6ff' },
+  { k:'camera',    e:'📷', n:'相机',      c:'#ec4899', bg:'#fdf2f8' },
+  { k:'gaming',    e:'🎮', n:'游戏',      c:'#8b5cf6', bg:'#f5f3ff' },
+  { k:'audio',     e:'🎧', n:'音频',      c:'#14b8a6', bg:'#f0fdfa' },
+  { k:'home',      e:'🏠', n:'家电',      c:'#f97316', bg:'#fff7ed' },
+  { k:'transport', e:'🚲', n:'交通',      c:'#22c55e', bg:'#f0fdf4' },
+  { k:'wear',      e:'👟', n:'穿戴',      c:'#f59e0b', bg:'#fffbeb' },
+  { k:'edu',       e:'📚', n:'书/课程',   c:'#ef4444', bg:'#fef2f2' },
+  { k:'other',     e:'📦', n:'其他',      c:'#6b7280', bg:'#f9fafb' },
+];
+
+const SORTS = [
+  { lbl:'日均 ↓', fn:(a,b) => avg(b) - avg(a) },
+  { lbl:'日均 ↑', fn:(a,b) => avg(a) - avg(b) },
+  { lbl:'日期 ↓', fn:(a,b) => (a.d < b.d ? 1 : -1) },
+];
+
+/* ── 状态 ───────────────────────────────── */
+let items = [], sortIdx = 0, selCat = 'other', editId = null;
+
+/* ── 工具函数 ───────────────────────────── */
+const esc = s => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+function daysUsed(dateStr) {
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const s = new Date(y, m-1, d); s.setHours(0,0,0,0);
+  const n = new Date();          n.setHours(0,0,0,0);
+  return Math.max(Math.floor((n - s) / 86400000), 1);
+}
+
+function avg(item) { return item.price / daysUsed(item.d); }
+
+function cls(v) { return v < 10 ? 'green' : v <= 50 ? 'yellow' : 'red'; }
+
+function fmt(n) {
+  if (n >= 10000) return '¥' + (n/10000).toFixed(1) + '万';
+  if (n >= 1000)  return '¥' + n.toFixed(0);
+  return '¥' + n.toFixed(2);
+}
+function fmtFull(n) {
+  if (n >= 10000) return '¥' + (n/10000).toFixed(2) + '万';
+  return '¥' + n.toFixed(2);
+}
+function fmtDur(days) {
+  if (days < 30) return days + '天';
+  if (days < 365) {
+    const mo = Math.floor(days/30), d = days % 30;
+    return d ? mo + '个月' + d + '天' : mo + '个月';
+  }
+  const yr = Math.floor(days/365), mo = Math.floor((days%365)/30);
+  return mo ? yr + '年' + mo + '个月' : yr + '年';
+}
+
+function catOf(k) { return CATS.find(c => c.k === k) || CATS[CATS.length-1]; }
+function uid()    { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ── 存储 ───────────────────────────────── */
+function load() {
+  try { items = JSON.parse(localStorage.getItem(SK) || '[]'); } catch { items = []; }
+}
+function save() { localStorage.setItem(SK, JSON.stringify(items)); }
+
+/* ── 渲染 ───────────────────────────────── */
+function renderDash() {
+  const total = items.reduce((s,i) => s + avg(i), 0);
+  document.getElementById('dTotal').textContent = fmt(total);
+  document.getElementById('dTotalSub').textContent =
+    `本月约 ${fmt(total*30)} · 本年约 ${fmt(total*365)}`;
+  document.getElementById('dCount').textContent = items.length;
+
+  if (!items.length) {
+    document.getElementById('dTopVal').textContent  = '—';
+    document.getElementById('dTopName').textContent = '暂无记录';
+  } else {
+    const top = items.reduce((a,b) => avg(a) > avg(b) ? a : b);
+    document.getElementById('dTopVal').textContent  = fmt(avg(top));
+    document.getElementById('dTopName').textContent = top.name;
+  }
+}
+
+function renderList() {
+  const el = document.getElementById('itemList');
+  const sorted = [...items].sort(SORTS[sortIdx].fn);
+  document.getElementById('listLbl').textContent = `共 ${items.length} 件`;
+
+  if (!sorted.length) {
+    el.innerHTML = `<div class="empty">
+      <span class="ico">📦</span>
+      <h3>还没有记录</h3>
+      <p>点击右下角 + 按钮<br>添加第一件物品</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = sorted.map(item => {
+    const a = avg(item), c = cls(a), cat = catOf(item.cat);
+    const days = daysUsed(item.d), dur = fmtDur(days);
+    let prog = '';
+    if (item.yr > 0) {
+      const pct = Math.min(days / (item.yr * 365) * 100, 100).toFixed(1);
+      prog = `<div class="prog-wrap">
+        <div class="prog-track"><div class="prog-fill ${c}" style="width:${pct}%"></div></div>
+        <div class="prog-lbl"><span>${dur}</span><span>预计${item.yr}年·${pct}%</span></div>
+      </div>`;
+    }
+    return `<div class="card ${c}" data-id="${esc(item.id)}">
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-left">
+            <div class="cat-ico" style="background:${cat.bg}">${cat.e}</div>
+            <div class="card-info">
+              <div class="card-name">${esc(item.name)}</div>
+              <div class="card-meta">${esc(cat.n)} · ${item.d}</div>
+            </div>
+          </div>
+          <div class="card-avg ${c}">${fmt(a)}<span class="unit">/天</span></div>
+        </div>
+        ${prog}
+        <div class="card-stats">
+          <div class="stat"><span class="stat-lbl">本月</span><span class="stat-val">${fmt(a*30)}</span></div>
+          <div class="stat"><span class="stat-lbl">已用</span><span class="stat-val">${dur}</span></div>
+          <div class="stat"><span class="stat-lbl">购入价</span><span class="stat-val">${fmt(item.price)}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.card').forEach(el =>
+    el.addEventListener('click', () => openDet(el.dataset.id))
+  );
+}
+
+function render() { renderDash(); renderList(); }
+
+/* ── Sheet 控制 ─────────────────────────── */
+function openSheet(id) {
+  closeAll();
+  document.getElementById(id).classList.add('on');
+  document.getElementById('overlay').classList.add('on');
+  document.body.classList.add('locked');
+}
+function closeAll() {
+  document.querySelectorAll('.sheet.on').forEach(s => s.classList.remove('on'));
+  document.getElementById('overlay').classList.remove('on');
+  document.body.classList.remove('locked');
+}
+
+/* ── 品类九宫格 ─────────────────────────── */
+function buildCatGrid() {
+  const g = document.getElementById('catGrid');
+  g.innerHTML = CATS.map(c => `
+    <button type="button" class="cat-opt${c.k===selCat?' sel':''}" data-k="${c.k}">
+      <span class="emo">${c.e}</span>
+      <span class="txt">${c.n}</span>
+    </button>`).join('');
+  g.querySelectorAll('.cat-opt').forEach(b => b.addEventListener('click', () => {
+    selCat = b.dataset.k;
+    g.querySelectorAll('.cat-opt').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+  }));
+}
+
+/* ── 表单 ───────────────────────────────── */
+function resetForm() {
+  document.getElementById('theForm').reset();
+  document.querySelectorAll('.f-inp.err').forEach(e => e.classList.remove('err'));
+  document.querySelectorAll('.f-err.on').forEach(e => e.classList.remove('on'));
+}
+function errShow(fid, eid) {
+  document.getElementById(fid).classList.add('err');
+  document.getElementById(eid).classList.add('on');
+}
+
+function openAdd() {
+  editId = null; selCat = 'other';
+  document.getElementById('formTitle').textContent = '添加物品';
+  document.getElementById('fId').value = '';
+  document.getElementById('btnDel').style.display = 'none';
+  resetForm();
+  document.getElementById('fDate').value = todayStr();
+  document.getElementById('fDate').max   = todayStr();
+  buildCatGrid();
+  openSheet('sheetForm');
+}
+
+function openEdit(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editId = id; selCat = item.cat;
+  document.getElementById('formTitle').textContent = '编辑物品';
+  document.getElementById('fId').value    = id;
+  document.getElementById('fName').value  = item.name;
+  document.getElementById('fPrice').value = item.price;
+  document.getElementById('fDate').value  = item.d;
+  document.getElementById('fDate').max    = todayStr();
+  document.getElementById('fYears').value = item.yr || '';
+  document.getElementById('fNote').value  = item.note || '';
+  document.getElementById('btnDel').style.display = '';
+  resetForm();
+  buildCatGrid();
+  openSheet('sheetForm');
+}
+
+document.getElementById('theForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name  = document.getElementById('fName').value.trim();
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const date  = document.getElementById('fDate').value;
+  const yr    = parseFloat(document.getElementById('fYears').value) || null;
+  const note  = document.getElementById('fNote').value.trim();
+
+  let ok = true;
+  if (!name)              { errShow('fName',  'eName');  ok = false; }
+  if (!price || price<=0) { errShow('fPrice', 'ePrice'); ok = false; }
+  if (!date || date > todayStr()) { errShow('fDate', 'eDate'); ok = false; }
+  if (!ok) return;
+
+  if (editId) {
+    const i = items.findIndex(x => x.id === editId);
+    if (i !== -1) items[i] = { ...items[i], name, cat: selCat, price, d: date, yr, note };
+    toast('已更新');
+  } else {
+    items.push({ id: uid(), name, cat: selCat, price, d: date, yr, note });
+    toast('已添加');
+  }
+  save(); render(); closeAll();
+});
+
+document.getElementById('btnDel').addEventListener('click', () => {
+  if (!editId) return;
+  const item = items.find(i => i.id === editId);
+  if (!item) return;
+  if (!confirm(`确定删除「${item.name}」吗？`)) return;
+  items = items.filter(i => i.id !== editId);
+  save(); render(); closeAll(); toast('已删除');
+});
+
+/* ── 详情 ───────────────────────────────── */
+function openDet(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const a = avg(item), c = cls(a), cat = catOf(item.cat);
+  const days = daysUsed(item.d);
+
+  document.getElementById('detTitle').textContent = cat.e + ' ' + item.name;
+
+  let progHtml = '';
+  if (item.yr > 0) {
+    const pct = Math.min(days/(item.yr*365)*100,100).toFixed(1);
+    progHtml = `<div class="det-prog">
+      <div class="det-prog-hdr">
+        <span>使用进度</span>
+        <span>${fmtDur(days)} / ${item.yr}年 (${pct}%)</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill ${c}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  const noteHtml = item.note ? `<div class="det-note">
+    <div class="det-note-lbl">备注</div>
+    <div class="det-note-txt">${esc(item.note)}</div>
+  </div>` : '';
+
+  document.getElementById('detBody').innerHTML = `
+    <div class="det-hero">
+      <div class="det-hero-lbl">日均费用</div>
+      <div class="det-hero-val ${c} num">${fmt(a)}</div>
+      <div class="det-hero-sub num">本月约 ${fmt(a*30)} · 本年约 ${fmt(a*365)}</div>
+    </div>
+    <div class="det-grid">
+      <div class="det-cell"><div class="det-cell-lbl">购入价格</div><div class="det-cell-val num">${fmtFull(item.price)}</div></div>
+      <div class="det-cell"><div class="det-cell-lbl">已使用</div><div class="det-cell-val num">${fmtDur(days)}</div></div>
+      <div class="det-cell"><div class="det-cell-lbl">本月费用</div><div class="det-cell-val num">${fmt(a*30)}</div></div>
+      <div class="det-cell"><div class="det-cell-lbl">本年费用</div><div class="det-cell-val num">${fmt(a*365)}</div></div>
+      <div class="det-cell"><div class="det-cell-lbl">购买日期</div><div class="det-cell-val" style="font-size:.88rem">${item.d}</div></div>
+      <div class="det-cell"><div class="det-cell-lbl">品类</div><div class="det-cell-val" style="font-size:.88rem">${cat.e} ${esc(cat.n)}</div></div>
+    </div>
+    ${progHtml}
+    ${noteHtml}
+    <button class="det-edit-btn" id="detEditBtn"><i class="ti ti-pencil"></i> 编辑物品</button>
+  `;
+  document.getElementById('detEditBtn').addEventListener('click', () => {
+    closeAll(); setTimeout(() => openEdit(id), 40);
+  });
+  openSheet('sheetDet');
+}
+
+/* ── 排序 ───────────────────────────────── */
+document.getElementById('btnSort').addEventListener('click', () => {
+  sortIdx = (sortIdx + 1) % SORTS.length;
+  document.getElementById('sortTxt').textContent = SORTS[sortIdx].lbl;
+  renderList();
+});
+
+/* ── Toast ──────────────────────────────── */
+let _tt;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('on'), 2000);
+}
+
+/* ── 事件绑定 ───────────────────────────── */
+document.getElementById('fab').addEventListener('click', openAdd);
+document.getElementById('btnHdrAdd').addEventListener('click', openAdd);
+document.getElementById('btnInfo').addEventListener('click', () => openSheet('sheetInfo'));
+document.getElementById('overlay').addEventListener('click', closeAll);
+document.getElementById('formClose').addEventListener('click', closeAll);
+document.getElementById('detClose').addEventListener('click', closeAll);
+document.getElementById('infoClose').addEventListener('click', closeAll);
+
+/* ── 日期显示 ───────────────────────────── */
+(function() {
+  const d = new Date();
+  const w = ['日','一','二','三','四','五','六'];
+  document.getElementById('hdrDate').textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 周${w[d.getDay()]}`;
+})();
+
+/* ── 启动 ───────────────────────────────── */
+load(); render();
+</script>
 </body>
 </html>
