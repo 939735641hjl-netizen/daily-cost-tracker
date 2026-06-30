@@ -8,8 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leancloud-storage/dist/av-min.js"></script>
 <style>
 :root{
   --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--indigo:#4f46e5;
@@ -354,26 +353,21 @@ body.locked{overflow:hidden}
 'use strict';
 
 // ╔══════════════════════════════════╗
-// ║      FIREBASE CONFIG            ║
-// ║  填入你的项目配置后重新提交     ║
+// ║      LEANCLOUD CONFIG           ║
+// ║  填入你的应用配置后重新提交     ║
 // ╚══════════════════════════════════╝
-const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+const LEAN_CONFIG = {
+  appId:     "YOUR_APP_ID",
+  appKey:    "YOUR_APP_KEY",
+  serverURL: "YOUR_SERVER_URL"   // 例：https://xxxxxxxx.api.lncld.net
 };
 // ════════════════════════════════════
 
-const IS_SET = !FIREBASE_CONFIG.apiKey.startsWith('YOUR_');
-let db = null, unsubFeed = null;
+const IS_SET = !LEAN_CONFIG.appId.startsWith('YOUR_');
+let unsubFeed = null;
 
 if (IS_SET) {
-  firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  db.enablePersistence().catch(()=>{});
+  AV.init(LEAN_CONFIG);
 }
 
 /* ── 常量 ── */
@@ -410,7 +404,7 @@ function fmtF(n){if(n>=10000)return'¥'+(n/10000).toFixed(2)+'万';return'¥'+n.
 function fmtDur(d){if(d<30)return d+'天';if(d<365){const m=Math.floor(d/30),r=d%30;return r?m+'个月'+r+'天':m+'个月';}const y=Math.floor(d/365),m=Math.floor((d%365)/30);return m?y+'年'+m+'个月':y+'年';}
 function catOf(k){return CATS.find(c=>c.k===k)||CATS[CATS.length-1];}
 function avatarColor(name){let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return AVATAR_COLORS[Math.abs(h)%AVATAR_COLORS.length];}
-function timeAgo(ts){if(!ts)return'';const s=Math.floor((Date.now()-ts.toMillis())/1000);if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+'分钟前';if(s<86400)return Math.floor(s/3600)+'小时前';if(s<172800)return'昨天';return Math.floor(s/86400)+'天前';}
+function timeAgo(ts){if(!ts)return'';const s=Math.floor((Date.now()-(ts instanceof Date?ts.getTime():ts))/1000);if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+'分钟前';if(s<86400)return Math.floor(s/3600)+'小时前';if(s<172800)return'昨天';return Math.floor(s/86400)+'天前';}
 
 /* ── 本地用户 ID ── */
 function myId(){let id=localStorage.getItem('_uid');if(!id){id=Date.now().toString(36)+Math.random().toString(36).slice(2);localStorage.setItem('_uid',id);}return id;}
@@ -482,8 +476,10 @@ function renderFeed(posts){
   el.querySelectorAll('.feed-del').forEach(btn=>btn.addEventListener('click',async e=>{
     e.stopPropagation();
     if(!confirm('删除这条分享吗？'))return;
-    try{await db.collection('shared').doc(btn.dataset.fid).delete();toast('已删除');}
-    catch(err){toast('删除失败');}
+    try{
+      await AV.Object.createWithoutData('Shared',btn.dataset.fid).destroy();
+      toast('已删除');loadFeed();
+    }catch(err){toast('删除失败');}
   }));
 }
 
@@ -491,38 +487,40 @@ function renderFeedSetup(){
   document.getElementById('feedList').innerHTML=`
   <div class="setup-hint">
     <span class="ico">⚙️</span>
-    <h3>需要配置 Firebase 才能使用广场</h3>
-    <p>广场功能需要云端存储，请按以下步骤完成配置（约 10 分钟）。「我的」功能无需配置，可正常使用。</p>
+    <h3>需要配置 LeanCloud 才能使用广场</h3>
+    <p>广场功能需要云端存储，请按以下步骤完成配置（约 5 分钟）。「我的」功能无需配置，可正常使用。</p>
     <ol class="setup-steps">
-      <li>打开 <b>firebase.google.com</b> → 创建项目（关闭 Analytics）</li>
-      <li>左侧 → <b>Firestore Database</b> → 创建数据库 → 生产模式</li>
-      <li>项目设置（齿轮）→ 添加 Web 应用 → 复制 <b>firebaseConfig</b></li>
-      <li>在 GitHub 编辑 <b>index.html</b>，将 <code>YOUR_...</code> 替换为真实值后提交</li>
-      <li>Firestore → 规则，替换为：</li>
+      <li>打开 <a href="https://console.leancloud.cn" target="_blank"><b>console.leancloud.cn</b></a> → 注册/登录 → 创建应用</li>
+      <li>进入应用 → 左侧 <b>设置 → 应用凭证</b>，复制 <b>AppID、AppKey、服务器地址</b></li>
+      <li>在 GitHub 编辑 <b>index.html</b>，找到 <code>LEAN_CONFIG</code>，将三个 <code>YOUR_...</code> 替换为真实值后提交</li>
+      <li>回到 LeanCloud → <b>数据存储 → 结构化数据</b>，创建 Class，名称填 <b>Shared</b>，权限选 <b>无限制</b></li>
     </ol>
-    <div class="setup-code">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /shared/{docId} {
-      allow read: if true;
-      allow create: if true;
-      allow delete: if true;
-    }
-  }
-}</div>
+    <div class="setup-code">const LEAN_CONFIG = {
+  appId:     "你的 AppID",
+  appKey:    "你的 AppKey",
+  serverURL: "https://xxxxxxxx.api.lncld.net"
+};</div>
   </div>`;
   document.getElementById('feedLbl').textContent='广场（未配置）';
 }
 
-/* ── 订阅广场 ── */
+/* ── LeanCloud 操作 ── */
+async function fetchPosts(){
+  const q=new AV.Query('Shared');
+  q.descending('createdAt');q.limit(100);
+  const res=await q.find();
+  return res.map(o=>({id:o.id,nickname:o.get('nickname'),name:o.get('name'),cat:o.get('cat'),price:o.get('price'),d:o.get('d'),yr:o.get('yr')||null,note:o.get('note')||'',ownerId:o.get('ownerId'),ts:o.createdAt}));
+}
+async function loadFeed(){
+  try{const posts=await fetchPosts();renderFeed(posts);}catch(e){console.error(e);}
+}
+
+/* ── 订阅广场（轮询） ── */
 function subscribeToFeed(){
-  if(!IS_SET||!db){renderFeedSetup();return;}
-  if(unsubFeed)unsubFeed();
-  unsubFeed=db.collection('shared').orderBy('ts','desc').limit(100)
-    .onSnapshot(snap=>{
-      const posts=snap.docs.map(d=>({...d.data(),id:d.id}));
-      renderFeed(posts);
-    },()=>renderFeedSetup());
+  if(!IS_SET){renderFeedSetup();return;}
+  if(unsubFeed)clearInterval(unsubFeed);
+  loadFeed();
+  unsubFeed=setInterval(loadFeed,30000);
 }
 
 /* ── Tab 切换 ── */
@@ -679,7 +677,7 @@ function openSharePrefilled(item){
 
 document.getElementById('shareForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  if(!IS_SET||!db){toast('请先配置 Firebase');return;}
+  if(!IS_SET){toast('请先配置 LeanCloud');return;}
   const nick=document.getElementById('sNickname').value.trim();
   const name=document.getElementById('sName').value.trim();
   const price=parseFloat(document.getElementById('sPrice').value);
@@ -696,10 +694,16 @@ document.getElementById('shareForm').addEventListener('submit',async e=>{
   const btn=document.getElementById('btnShareSubmit');
   btn.disabled=true;btn.textContent='发布中…';
   try{
-    await db.collection('shared').add({nickname:nick,name,cat:sSelCat,price,d:date,yr,note,ownerId:myId(),ts:firebase.firestore.FieldValue.serverTimestamp()});
+    const Shared=AV.Object.extend('Shared');
+    const obj=new Shared();
+    const acl=new AV.ACL();acl.setPublicReadAccess(true);acl.setPublicWriteAccess(true);obj.setACL(acl);
+    const data={nickname:nick,name,cat:sSelCat,price,d:date,ownerId:myId(),note};
+    if(yr)data.yr=yr;
+    Object.entries(data).forEach(([k,v])=>obj.set(k,v));
+    await obj.save();
     closeAll();toast('已发布到广场！');
-    switchTab('feed');
-  }catch(err){toast('发布失败：'+err.code);}
+    switchTab('feed');loadFeed();
+  }catch(err){toast('发布失败：'+(err.message||'请检查配置'));}
   finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-send" style="font-size:.9rem"></i> 发布到广场';}
 });
 
